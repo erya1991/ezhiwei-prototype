@@ -1,0 +1,67 @@
+# Real environment files at every depth; only sanitized examples may be tracked.
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+.envrc
+
+# Dependencies, build outputs, local inputs and scratch data (all subprojects).
+node_modules/
+dist/
+dist-ssr/
+unpackage/
+_tmp/
+.local-inputs/
+coverage/
+.nyc_output/
+.vite/
+.cache/
+.npm/
+.pnpm-store/
+.eslintcache
+*.tsbuildinfo
+
+# Logs, backups and operating-system temporary files.
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.pid
+*.pid.lock
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / Agent local state; shared policy belongs in AGENTS.md and docs/.
+.idea/
+.vscode/
+.history/
+.codex/
+.agents/
+.trae/
+.cursor/
+.windsurf/
+
+# Private credentials / local package-registry authentication.
+.aws/
+.ssh/
+.npmrc
+.yarnrc
+.yarnrc.yml
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Raw archives must be reviewed/extracted locally, never included in the baseline.
+*.zip
+*.7z
+*.rar

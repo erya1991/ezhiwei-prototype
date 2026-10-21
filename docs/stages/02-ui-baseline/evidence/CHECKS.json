@@ -1,0 +1,678 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-21",
+  "stage": "02-ui-baseline",
+  "overallStatus": "PENDING",
+  "implementationStatus": "COMPLETE",
+  "ownerAcceptance": "PENDING",
+  "scope": {
+    "modifiedFiles": [
+      "AGENTS.md",
+      "web/package.json",
+      "web/package-lock.json",
+      "web/src/main.js",
+      "web/src/router/index.js"
+    ],
+    "addedFiles": [
+      "web/src/styles/theme.css",
+      "web/src/views/__dev/UiBaselineView.vue",
+      "docs/collaboration/UI-COMPONENT-GUIDE.md",
+      "docs/stages/02-ui-baseline/PLAN.md",
+      "docs/stages/02-ui-baseline/ACCEPTANCE.md",
+      "docs/stages/02-ui-baseline/RESULT.md",
+      "docs/stages/02-ui-baseline/evidence/CHECKS.json"
+    ],
+    "originalFileCount": 52,
+    "originalUnchangedCount": 48,
+    "changedOriginalFiles": [
+      "web/package-lock.json",
+      "web/package.json",
+      "web/src/main.js",
+      "web/src/router/index.js"
+    ],
+    "protectedFiles": [
+      {
+        "path": "docs/collaboration/FRONTEND-COOPERATION.md",
+        "unchanged": true
+      },
+      {
+        "path": "docs/collaboration/OWNERSHIP.md",
+        "unchanged": true
+      },
+      {
+        "path": "docs/stages/00-01-baseline/PLAN.md",
+        "unchanged": true
+      },
+      {
+        "path": "docs/stages/00-01-baseline/ACCEPTANCE.md",
+        "unchanged": true
+      },
+      {
+        "path": "docs/stages/00-01-baseline/RESULT.md",
+        "unchanged": true
+      }
+    ]
+  },
+  "dependencies": {
+    "elementPlusExactVersion": "2.14.7",
+    "vuePeer": "^3.3.7",
+    "vueVersion": "3.5.42",
+    "oldLockNonRootChanges": [],
+    "newLockRecordCount": 21,
+    "coreDependencyUpgrades": false,
+    "automaticAuditFix": false,
+    "auditRisk": {
+      "moderate": 5,
+      "high": 2,
+      "critical": 1,
+      "status": "PENDING"
+    }
+  },
+  "commands": {
+    "npmCi": {
+      "exitCode": 0,
+      "result": "added 126 packages",
+      "priorEnvironmentFailures": [
+        "esbuild.exe unlink EPERM while Vite running",
+        "@floating-ui/dom mkdir EPERM on ordinary retry"
+      ],
+      "recovery": "Owner stopped Vite; identical npm ci completed in authorized execution context; no node_modules patch."
+    },
+    "npmBuild": {
+      "exitCode": 0,
+      "viteVersion": "5.4.21",
+      "modules": 2189,
+      "durationSeconds": 14.11,
+      "warnings": [
+        "existing ECharts chunk over 500kB",
+        "new main chunk over 500kB from full Element Plus import"
+      ]
+    },
+    "runtime": {
+      "node": "24.14.0",
+      "npm": "11.9.0"
+    }
+  },
+  "bundleSizeJsCss": {
+    "beforeBytes": 1444397,
+    "afterBytes": 2769687,
+    "beforeGzipBytes": 475716,
+    "afterGzipBytes": 834351,
+    "deltaBytes": 1325290,
+    "deltaGzipBytes": 358635
+  },
+  "browser": {
+    "devPort": 15173,
+    "productionPreviewPort": 15174,
+    "default5173": "Historical EACCES remains FAIL; owner exception PENDING, not reclassified.",
+    "routeChecks": [
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/login",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 1,
+        "canvasCountAfter": 1,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/knowledge",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/ai-agent",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/snapshot",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/energy",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 2,
+        "canvasCountAfter": 2,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/predict",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 6,
+        "canvasCountAfter": 6,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/work-order",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 2,
+        "canvasCountAfter": 2,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "route": "/settings",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 1,
+        "canvasCountAfter": 1,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/knowledge",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/ai-agent",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/snapshot",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/energy",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 2,
+        "canvasCountAfter": 2,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/predict",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 6,
+        "canvasCountAfter": 6,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/work-order",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 2,
+        "canvasCountAfter": 2,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/settings",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      },
+      {
+        "width": 1366,
+        "height": 768,
+        "route": "/login",
+        "loaded": true,
+        "sampledStylesEqual": true,
+        "canvasCountBefore": 0,
+        "canvasCountAfter": 0,
+        "noDocumentHorizontalOverflow": true
+      }
+    ],
+    "uiChecks": [
+      {
+        "check": "pagination-next",
+        "pass": true
+      },
+      {
+        "check": "keyword-query",
+        "pass": true
+      },
+      {
+        "check": "empty-results",
+        "pass": true
+      },
+      {
+        "check": "query-reset",
+        "pass": true
+      },
+      {
+        "check": "status-query",
+        "pass": true
+      },
+      {
+        "check": "date-range-query",
+        "pass": true
+      },
+      {
+        "check": "required-validation",
+        "pass": true
+      },
+      {
+        "check": "whitespace-name-validation",
+        "pass": true
+      },
+      {
+        "check": "cancel-without-create",
+        "pass": true
+      },
+      {
+        "check": "reopen-clears-draft-and-validation",
+        "pass": true
+      },
+      {
+        "check": "close-button-without-create",
+        "pass": true
+      },
+      {
+        "check": "submit-adds-visible-row",
+        "pass": true
+      },
+      {
+        "check": "submit-success-message",
+        "pass": true
+      },
+      {
+        "check": "page-size-change",
+        "pass": true
+      },
+      {
+        "check": "message-warning",
+        "pass": true
+      },
+      {
+        "check": "message-error",
+        "pass": true
+      },
+      {
+        "check": "message-success",
+        "pass": true
+      },
+      {
+        "check": "reset-demo-records",
+        "pass": true
+      },
+      {
+        "check": "tooltip-visible",
+        "pass": true
+      },
+      {
+        "check": "dialog-1366-viewport-and-teleport",
+        "pass": true
+      }
+    ],
+    "legacyRepresentativeChecks": [
+      {
+        "check": "dashboard-chart-pie",
+        "pass": true
+      },
+      {
+        "check": "dashboard-overview-open",
+        "pass": true
+      },
+      {
+        "check": "dashboard-overview-close",
+        "pass": true
+      },
+      {
+        "check": "knowledge-category-filter",
+        "pass": true
+      },
+      {
+        "check": "knowledge-detail-open",
+        "pass": true
+      },
+      {
+        "check": "knowledge-reset-and-close",
+        "pass": true
+      },
+      {
+        "check": "work-order-filter",
+        "pass": true
+      },
+      {
+        "check": "work-order-detail-open",
+        "pass": true
+      },
+      {
+        "check": "work-order-detail-close-and-reset",
+        "pass": true
+      },
+      {
+        "check": "settings-about-tab",
+        "pass": true
+      },
+      {
+        "check": "settings-basic-tab",
+        "pass": true
+      },
+      {
+        "check": "predict-device-tab",
+        "pass": true
+      }
+    ],
+    "componentMetrics": {
+      "card": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(29, 29, 29)",
+        "height": 149.33334350585938,
+        "radius": "16px",
+        "width": 1824
+      },
+      "date": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(29, 29, 29)",
+        "height": 32,
+        "radius": "8px",
+        "width": 640
+      },
+      "disabledButton": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(155, 155, 155)",
+        "height": 32,
+        "radius": "2px",
+        "width": 32
+      },
+      "input": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(29, 29, 29)",
+        "height": 32,
+        "radius": "8px",
+        "width": 594.28125
+      },
+      "noDocumentOverflow": true,
+      "noPageHorizontalOverflow": true,
+      "primary": {
+        "background": "rgb(33, 115, 216)",
+        "color": "rgb(255, 255, 255)",
+        "height": 32,
+        "radius": "8px",
+        "width": 115.33333587646484
+      },
+      "select": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(29, 29, 29)",
+        "height": 32,
+        "radius": "8px",
+        "width": 365.71875
+      },
+      "tableHeader": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(107, 107, 107)",
+        "height": 39.66666793823242,
+        "radius": "0px",
+        "width": 1775
+      },
+      "tokens": {
+        "primary": "#2173D8",
+        "primaryDark2": "#1A5CAD",
+        "primaryLight9": "#E8F1FC"
+      },
+      "warningTag": {
+        "background": "rgb(255, 244, 230)",
+        "color": "rgb(138, 75, 0)",
+        "height": 24,
+        "radius": "4px",
+        "width": 55.33333587646485
+      }
+    },
+    "dialog1366": {
+      "height": 540,
+      "inViewport": true,
+      "radius": "16px",
+      "teleported": true,
+      "width": 560,
+      "zIndex": 3032
+    },
+    "guards": {
+      "unauthenticatedDevRouteRedirect": true,
+      "originalLogin": true
+    },
+    "consoleSamples": {
+      "loginConsoleEntries": 0,
+      "uiConsoleEntries": 0,
+      "uiLogLevels": [],
+      "scope": "Current login and UI page samples; local AI proxy unavailable is a pre-existing separate behavior."
+    },
+    "stable1920Login": {
+      "brandOpacity": "1",
+      "card": {
+        "height": 453.3333435058594,
+        "width": 400,
+        "x": 1086,
+        "y": 313.3333435058594
+      },
+      "cardInViewport": true,
+      "height": 1080,
+      "horizontalOverflow": false,
+      "opacity": "1",
+      "width": 1920
+    },
+    "production": {
+      "markerHits": [],
+      "url": "http://localhost:15174/__ui-baseline",
+      "exampleElementCount": 0,
+      "exampleHeadingCount": 0,
+      "menuLinks": 8,
+      "expectedResult": "No demo route/component matched; original SPA shell on unknown URL is expected, not HTTP404."
+    },
+    "visualReview": "Agent reviewed both widths, original route screenshots and demo/dialog. No new obvious regression; not pixel-identical or owner acceptance.",
+    "limitations": [
+      "Initial 1920 login baseline was captured during entry animation; stable fullPage after capture plus DOM reviewed.",
+      "Original predict page local AI proxy unavailable; no real AI or backend validation.",
+      "Representative original interactions do not cover all business flows."
+    ],
+    "screenshotStorage": "_tmp/stage02/screenshots/ (ignored; no new screenshot Git candidates)",
+    "services": "Agent-owned 15173 and 15174 stopped after verification."
+  },
+  "security": {
+    "secretPatternHits": [],
+    "suspiciousCandidates": [],
+    "ignoredSamples": [
+      {
+        "path": "web/.env",
+        "ignored": true
+      },
+      {
+        "path": "web/node_modules/@esbuild/win32-x64/esbuild.exe",
+        "ignored": true
+      },
+      {
+        "path": "web/dist/index.html",
+        "ignored": true
+      },
+      {
+        "path": "_tmp/stage02/screenshots/ui-1366.jpg",
+        "ignored": true
+      },
+      {
+        "path": ".local-inputs/资料.txt",
+        "ignored": true
+      },
+      {
+        "path": "miniapp/.env.local",
+        "ignored": true
+      },
+      {
+        "path": "miniapp/node_modules/x",
+        "ignored": true
+      },
+      {
+        "path": "miniapp/dist/index.html",
+        "ignored": true
+      }
+    ],
+    "realAiApiCalled": false,
+    "realEnvValuesDisplayed": false,
+    "ownerKeyRotation": "PENDING",
+    "assetAuthorization": "PENDING",
+    "legacyDashboardScreenshot": "No visible Key/password/private contacts observed; original material authorization and submission review PENDING."
+  },
+  "git": {
+    "branch": "main",
+    "hasInitialCommit": false,
+    "indexFileCount": 0,
+    "remoteCount": 0,
+    "tagCount": 0,
+    "automaticCommit": false,
+    "automaticPush": false,
+    "automaticDeploy": false,
+    "candidateCount": 72,
+    "candidatePaths": [
+      ".gitignore",
+      "AGENTS.md",
+      "README.md",
+      "contracts/README.md",
+      "docs/collaboration/FRONTEND-COOPERATION.md",
+      "docs/collaboration/OWNERSHIP.md",
+      "docs/collaboration/UI-COMPONENT-GUIDE.md",
+      "docs/stages/00-01-baseline/ACCEPTANCE.md",
+      "docs/stages/00-01-baseline/PLAN.md",
+      "docs/stages/00-01-baseline/RESULT.md",
+      "docs/stages/00-01-baseline/evidence/BROWSER-CHECKS.json",
+      "docs/stages/00-01-baseline/evidence/PC-DASHBOARD.jpg",
+      "docs/stages/00-01-baseline/evidence/WEB-SHA256.json",
+      "docs/stages/02-ui-baseline/ACCEPTANCE.md",
+      "docs/stages/02-ui-baseline/PLAN.md",
+      "docs/stages/02-ui-baseline/RESULT.md",
+      "docs/stages/02-ui-baseline/evidence/CHECKS.json",
+      "miniapp/README.md",
+      "web/.env.example",
+      "web/index.html",
+      "web/package-lock.json",
+      "web/package.json",
+      "web/public/bg.png",
+      "web/public/login-bg.png",
+      "web/public/图片/AI智能体.png",
+      "web/public/图片/专家知识库.png",
+      "web/public/图片/中央空调机组.png",
+      "web/public/图片/冷却塔.png",
+      "web/public/图片/变压器.png",
+      "web/public/图片/智能工单.png",
+      "web/public/图片/水泵.png",
+      "web/public/图片/污水处理.png",
+      "web/public/图片/消防.png",
+      "web/public/图片/燃气锅炉.png",
+      "web/public/图片/集水器.png",
+      "web/public/头像/冯丁.png",
+      "web/public/头像/王爱年.png",
+      "web/public/头像/石世平.png",
+      "web/public/头像/苏红青.png",
+      "web/public/头像/许云松.png",
+      "web/scripts/extract-kb.mjs",
+      "web/scripts/split.mjs",
+      "web/server/index.js",
+      "web/src/App.vue",
+      "web/src/components/Sidebar.vue",
+      "web/src/components/Topbar.vue",
+      "web/src/components/dashboard/AlarmHostCard.vue",
+      "web/src/components/dashboard/OverviewModal.vue",
+      "web/src/components/dashboard/WaterTankCard.vue",
+      "web/src/composables/useAppState.js",
+      "web/src/composables/useAuth.js",
+      "web/src/composables/useEcharts.js",
+      "web/src/composables/useToast.js",
+      "web/src/data/dashboard.js",
+      "web/src/data/knowledgeBase.js",
+      "web/src/data/workOrder.js",
+      "web/src/main.js",
+      "web/src/router/index.js",
+      "web/src/styles/app.css",
+      "web/src/styles/index.css",
+      "web/src/styles/theme.css",
+      "web/src/views/AiChatView.vue",
+      "web/src/views/DashboardView.vue",
+      "web/src/views/EnergyView.vue",
+      "web/src/views/KnowledgeBaseView.vue",
+      "web/src/views/LoginView.vue",
+      "web/src/views/PredictMaintenanceView.vue",
+      "web/src/views/SettingsView.vue",
+      "web/src/views/SnapshotView.vue",
+      "web/src/views/WorkOrderView.vue",
+      "web/src/views/__dev/UiBaselineView.vue",
+      "web/vite.config.js"
+    ]
+  },
+  "localEvidenceFiles": [
+    "_tmp/stage02/before.json",
+    "_tmp/stage02/build.log",
+    "_tmp/stage02/build-before.json",
+    "_tmp/stage02/browser-before.json",
+    "_tmp/stage02/browser-after.json",
+    "_tmp/stage02/browser-interactions.json",
+    "_tmp/stage02/verification-static.json",
+    "_tmp/stage02/production-browser.json",
+    "_tmp/stage02/login-1920-stable-metrics.json",
+    "_tmp/stage02/console-summary.json",
+    "_tmp/stage02/final-audit.json"
+  ],
+  "historicalStage0001": "PENDING; its PLAN/ACCEPTANCE/RESULT unchanged."
+}

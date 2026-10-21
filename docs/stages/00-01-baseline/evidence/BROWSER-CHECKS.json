@@ -1,0 +1,73 @@
+{
+  "checkedOn": "2026-10-21",
+  "timezone": "Asia/Shanghai",
+  "scope": "Agent browser loading smoke check; owner business and visual acceptance remains PENDING.",
+  "requestedBaseUrl": "http://localhost:5173",
+  "actualBaseUrl": "http://localhost:15173",
+  "alternatePortReason": "Vite listen EACCES on IPv6 and IPv4 port 5173; no Vite config changes.",
+  "routes": [
+    {
+      "route": "/",
+      "name": "综合态势驾驶舱",
+      "actualUrl": "http://localhost:15173/",
+      "rendered": true
+    },
+    {
+      "route": "/knowledge",
+      "actualUrl": "http://localhost:15173/knowledge",
+      "rendered": true,
+      "evidence": "分类、条目列表及知识条目总数已显示"
+    },
+    {
+      "route": "/ai-agent",
+      "actualUrl": "http://localhost:15173/ai-agent",
+      "rendered": true
+    },
+    {
+      "route": "/snapshot",
+      "actualUrl": "http://localhost:15173/snapshot",
+      "rendered": true
+    },
+    {
+      "route": "/energy",
+      "actualUrl": "http://localhost:15173/energy",
+      "rendered": true
+    },
+    {
+      "route": "/predict",
+      "actualUrl": "http://localhost:15173/predict",
+      "rendered": true
+    },
+    {
+      "route": "/work-order",
+      "actualUrl": "http://localhost:15173/work-order",
+      "rendered": true
+    },
+    {
+      "route": "/settings",
+      "actualUrl": "http://localhost:15173/settings",
+      "rendered": true
+    },
+    {
+      "route": "/login",
+      "actualUrl": "http://localhost:15173/login",
+      "rendered": true,
+      "evidence": "登录表单、退出后回到登录页、未登录访问知识库回到登录页均已观察"
+    }
+  ],
+  "guards": {
+    "unauthenticatedRootRedirect": "PASS",
+    "originalDemoLogin": "PASS",
+    "authenticatedLoginRedirect": "PASS",
+    "logout": "PASS",
+    "unauthenticatedKnowledgeRedirect": "PASS",
+    "settingsReload": "PASS"
+  },
+  "aiBoundary": "Express was not started; no real keys configured or real AI API invoked. The existing predict page local proxy request failed and the local fallback was visible.",
+  "predictLocalFallback": "PASS",
+  "rememberPasswordDuringCheck": false,
+  "screenshot": "PC-DASHBOARD.jpg",
+  "screenshotFormat": "image/jpeg",
+  "screenshotSha256": "4869813137ad647baaef36f727aad414906c6172e0c3312df77184fda419f382",
+  "ownerAcceptance": "PENDING"
+}

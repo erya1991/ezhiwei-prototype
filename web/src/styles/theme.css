@@ -1,0 +1,158 @@
+/* Shared tokens for new PC components. Legacy --blue/--card-bg/layout stay untouched.
+   Element Plus light-N palettes mix the semantic color with N*10% white;
+   dark-2 mixes with 20% black. Primary light-9 uses the V1.0 specified background. */
+:root {
+  --ez-primary: #2173D8;
+  --ez-primary-bg: #E8F1FC;
+  --ez-primary-hover: #649DE4;
+  --ez-primary-active: #1A5CAD;
+  --ez-success: #107C10;
+  --ez-warning: #FF9500;
+  --ez-warning-text: #8A4B00;
+  --ez-danger: #D93025;
+  --ez-info: #6B6B6B;
+  --ez-text: #1D1D1D;
+  --ez-text-secondary: #6B6B6B;
+  --ez-text-muted: #9B9B9B;
+  --ez-page-bg: #FAFAFD;
+  --ez-card-bg: #FFFFFF;
+  --ez-border: rgba(0, 0, 0, 0.08);
+  --ez-border-light: rgba(0, 0, 0, 0.06);
+  --ez-fill: #F0F2F5;
+  --ez-fill-light: #F5F7FA;
+  --ez-disabled-bg: #F5F7FA;
+  --ez-disabled-text: #A8ABB2;
+  --ez-disabled-border: #E4E7ED;
+  --ez-font-family: "Source Han Sans SC", "Noto Sans SC", "思源黑体", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ez-font-size-body: 14px;
+  --ez-font-size-title: 20px;
+  --ez-font-size-card-title: 16px;
+  --ez-font-size-caption: 12px;
+  --ez-page-padding: 20px;
+  --ez-card-gap: 16px;
+  --ez-space-8: 8px;
+  --ez-space-12: 12px;
+  --ez-space-16: 16px;
+  --ez-space-24: 24px;
+  --ez-card-radius: 16px;
+  --ez-control-radius: 8px;
+  --ez-control-height: 32px;
+  --ez-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  --el-color-primary: var(--ez-primary);
+  --el-color-primary-light-1: #3781DC;
+  --el-color-primary-light-2: #4D8FE0;
+  --el-color-primary-light-3: var(--ez-primary-hover);
+  --el-color-primary-light-4: #7AABE8;
+  --el-color-primary-light-5: #90B9EC;
+  --el-color-primary-light-6: #A6C7EF;
+  --el-color-primary-light-7: #BCD5F3;
+  --el-color-primary-light-8: #D3E3F7;
+  --el-color-primary-light-9: var(--ez-primary-bg);
+  --el-color-primary-dark-2: var(--ez-primary-active);
+
+  --el-color-success: var(--ez-success);
+  --el-color-success-light-1: #288928;
+  --el-color-success-light-2: #409640;
+  --el-color-success-light-3: #58A358;
+  --el-color-success-light-4: #70B070;
+  --el-color-success-light-5: #88BE88;
+  --el-color-success-light-6: #9FCB9F;
+  --el-color-success-light-7: #B7D8B7;
+  --el-color-success-light-8: #CFE5CF;
+  --el-color-success-light-9: #E7F2E7;
+  --el-color-success-dark-2: #0D630D;
+
+  --el-color-warning: var(--ez-warning);
+  --el-color-warning-light-1: #FFA01A;
+  --el-color-warning-light-2: #FFAA33;
+  --el-color-warning-light-3: #FFB54D;
+  --el-color-warning-light-4: #FFBF66;
+  --el-color-warning-light-5: #FFCA80;
+  --el-color-warning-light-6: #FFD599;
+  --el-color-warning-light-7: #FFDFB3;
+  --el-color-warning-light-8: #FFEACC;
+  --el-color-warning-light-9: #FFF4E6;
+  --el-color-warning-dark-2: #CC7700;
+
+  --el-color-danger: var(--ez-danger);
+  --el-color-danger-light-1: #DD453B;
+  --el-color-danger-light-2: #E15951;
+  --el-color-danger-light-3: #E46E66;
+  --el-color-danger-light-4: #E8837C;
+  --el-color-danger-light-5: #EC9892;
+  --el-color-danger-light-6: #F0ACA8;
+  --el-color-danger-light-7: #F4C1BE;
+  --el-color-danger-light-8: #F7D6D3;
+  --el-color-danger-light-9: #FBEAE9;
+  --el-color-danger-dark-2: #AE261E;
+
+  --el-color-error: var(--ez-danger);
+  --el-color-error-light-1: #DD453B;
+  --el-color-error-light-2: #E15951;
+  --el-color-error-light-3: #E46E66;
+  --el-color-error-light-4: #E8837C;
+  --el-color-error-light-5: #EC9892;
+  --el-color-error-light-6: #F0ACA8;
+  --el-color-error-light-7: #F4C1BE;
+  --el-color-error-light-8: #F7D6D3;
+  --el-color-error-light-9: #FBEAE9;
+  --el-color-error-dark-2: #AE261E;
+
+  --el-color-info: var(--ez-info);
+  --el-color-info-light-1: #7A7A7A;
+  --el-color-info-light-2: #898989;
+  --el-color-info-light-3: #979797;
+  --el-color-info-light-4: #A6A6A6;
+  --el-color-info-light-5: #B5B5B5;
+  --el-color-info-light-6: #C4C4C4;
+  --el-color-info-light-7: #D3D3D3;
+  --el-color-info-light-8: #E1E1E1;
+  --el-color-info-light-9: #F0F0F0;
+  --el-color-info-dark-2: #565656;
+
+  --el-font-family: var(--ez-font-family);
+  --el-font-size-base: var(--ez-font-size-body);
+  --el-font-size-small: var(--ez-font-size-caption);
+  --el-font-size-extra-small: var(--ez-font-size-caption);
+  --el-font-size-medium: var(--ez-font-size-body);
+  --el-font-size-large: var(--ez-font-size-card-title);
+  --el-font-size-extra-large: var(--ez-font-size-title);
+  --el-text-color-primary: var(--ez-text);
+  --el-text-color-regular: var(--ez-text-secondary);
+  --el-text-color-secondary: var(--ez-text-secondary);
+  --el-text-color-placeholder: var(--ez-text-muted);
+  --el-text-color-disabled: var(--ez-disabled-text);
+  --el-bg-color: var(--ez-card-bg);
+  --el-bg-color-page: var(--ez-page-bg);
+  --el-bg-color-overlay: var(--ez-card-bg);
+  --el-border-color: var(--ez-border);
+  --el-border-color-light: var(--ez-border-light);
+  --el-border-color-lighter: var(--ez-border-light);
+  --el-border-color-extra-light: rgba(0, 0, 0, 0.04);
+  --el-border-color-dark: rgba(0, 0, 0, 0.12);
+  --el-border-color-darker: rgba(0, 0, 0, 0.16);
+  --el-fill-color: var(--ez-fill);
+  --el-fill-color-light: var(--ez-fill-light);
+  --el-fill-color-lighter: #FAFAFC;
+  --el-fill-color-extra-light: #FCFCFE;
+  --el-fill-color-dark: #E6E8EB;
+  --el-fill-color-darker: #DADDE2;
+  --el-fill-color-blank: var(--ez-card-bg);
+  --el-disabled-bg-color: var(--ez-disabled-bg);
+  --el-disabled-text-color: var(--ez-disabled-text);
+  --el-disabled-border-color: var(--ez-disabled-border);
+  --el-border-radius-base: var(--ez-control-radius);
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
+  --el-component-size: var(--ez-control-height);
+  --el-component-size-small: 24px;
+  --el-component-size-large: 40px;
+}
+
+/* Component-local variables must be set on the opted-in component itself.
+   These project classes also work for body-teleported content. */
+.ez-card { --el-card-border-radius: var(--ez-card-radius); }
+.ez-dialog { --el-dialog-border-radius: var(--ez-card-radius); }
+.ez-message-box { --el-messagebox-border-radius: var(--ez-card-radius); }
+.ez-warning-message { --el-message-text-color: var(--ez-warning-text); }

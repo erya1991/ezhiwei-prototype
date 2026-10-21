@@ -1,0 +1,81 @@
+/* ===== Vue 迁移补充样式（原 demo 没有的，仅用于框架本身） ===== */
+
+/* router-link 渲染为 <a>，去掉默认下划线 */
+a.sidebar-item {
+  text-decoration: none;
+}
+
+/* AI 对话页：医疗专项系统标签选中态（原 demo 只切换 class，未定义样式，这里补上） */
+.ai-system-tag.active {
+  background: rgba(33, 115, 216, 0.12);
+  border-color: rgba(33, 115, 216, 0.4);
+  color: var(--blue);
+  font-weight: 600;
+}
+
+/* 各页面占位视图 */
+.placeholder-page {
+  position: fixed;
+  top: var(--topbar-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.placeholder-page h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+.placeholder-page p {
+  color: var(--text-sec);
+  font-size: 13px;
+}
+
+/* ===== 页面容器显隐修复 =====
+   原 demo 是单页应用，靠给各 page 容器加/去 .active 类来切换页面，
+   因此这些容器默认 display:none。Vue 迁移后改用 vue-router 直接挂载/卸载视图，
+   必须覆盖掉 display:none，否则除驾驶舱(.main)外的所有页面都是空白。 */
+.ai-page,
+.wo-page,
+.sys-page,
+.snap-page,
+.en-page {
+  display: flex;
+}
+.deep-agent-page {
+  display: grid;
+}
+
+/* 设置页标签内容：原 demo 靠 .sys-tab-content.active 显隐，迁移后改用 v-show，
+   但基类仍是 display:none，需覆盖为 block 让 v-show 生效（隐藏由内联 display:none 控制）。 */
+.sys-tab-content {
+  display: block;
+}
+
+/* Toast 平滑滑动淡入淡出：默认向上偏移 16px，显示时滑回原位 */
+.sys-toast {
+  transform: translateX(-50%) translateY(-16px);
+}
+
+/* 顶栏退出按钮 */
+.topbar-logout {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-sec);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 160ms ease;
+}
+.topbar-logout:hover {
+  color: var(--red);
+  border-color: rgba(217, 48, 37, 0.35);
+  background: var(--red-bg);
+}
