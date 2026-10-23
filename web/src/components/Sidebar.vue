@@ -12,11 +12,13 @@ const items = [
   {
     path: '/knowledge',
     label: '专家知识库',
+    children: [{ path: '/knowledge', label: '知识资料管理' }, { path: '/knowledge-processing', label: '知识加工与治理' }, { path: '/threshold-rules', label: '规则与阈值知识库' }],
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="10" r="2"/><circle cx="15" cy="10" r="2"/><path d="M8 14c0 0 1.5 2 4 2s4-2 4-2"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
   },
   {
     path: '/ai-agent',
     label: 'AI智能体',
+    children: [{ path: '/ai-agent', label: '智能问答' }, { path: '/reasoning-rules', label: '推理规则配置' }],
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/><path d="M8 14c0 0 1.5 2.5 4 2.5s4-2.5 4-2.5"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>'
   },
   {
@@ -54,12 +56,24 @@ const items = [
         <router-link
           :to="item.path"
           class="sidebar-item"
-          :class="{ active: route.path === item.path }"
+          :class="{ active: route.path === item.path || item.children?.some(child => child.path === route.path) }"
         >
           <span class="nav-icon" v-html="item.icon"></span>
           <span class="item-text">{{ item.label }}</span>
         </router-link>
+        <ul v-if="item.children" class="module-children">
+          <li v-for="child in item.children" :key="child.path"><router-link :to="child.path" :class="{ selected: route.path === child.path }">{{ child.label }}</router-link></li>
+        </ul>
       </li>
     </ul>
   </nav>
 </template>
+
+<style scoped>
+.module-children { list-style:none; margin:2px 8px 6px 36px; padding:0; visibility:hidden; overflow:hidden; }
+.sidebar:hover .module-children,.sidebar:focus-within .module-children { visibility:visible; }
+.sidebar:focus-within { width:var(--sidebar-expand-w); }
+.sidebar:focus-within .item-text { opacity:1; }
+.module-children a { display:block; padding:8px; white-space:nowrap; color:var(--ez-text-secondary); text-decoration:none; border-radius:var(--ez-control-radius); font-size:12px; }
+.module-children a.selected { color:var(--ez-primary); background:var(--ez-primary-bg); }
+</style>
