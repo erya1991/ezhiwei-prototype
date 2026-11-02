@@ -68,6 +68,73 @@ const routes = [
     component: () => import('../views/PredictMaintenanceView.vue'),
     meta: { title: '设备健康与预测性维护AI中心' }
   },
+  // B 分支：组织人员、安全责任、风险管控与隐患排查。
+  {
+    path: '/personnel/organization',
+    name: 'personnel-organization',
+    component: () => import('../views/hr/OrgPersonnelView.vue'),
+    meta: { title: '组织与人员' }
+  },
+  {
+    path: '/safety/responsibility-system',
+    name: 'responsibility-system',
+    component: () => import('../views/responsibility/ResponsibilitySystemView.vue'),
+    meta: { title: '安全责任管理制度' }
+  },
+  {
+    path: '/safety/responsibility-subject',
+    name: 'responsibility-subject',
+    component: () => import('../views/responsibility/SubjectDivisionView.vue'),
+    meta: { title: '安全责任主体划分' }
+  },
+  {
+    path: '/risk/identify',
+    name: 'risk-identify',
+    component: () => import('../views/risk/RiskIdentifyView.vue'),
+    meta: { title: '风险识别与评估' }
+  },
+  {
+    path: '/risk/catalog',
+    name: 'risk-catalog',
+    component: () => import('../views/risk/RiskCatalogView.vue'),
+    meta: { title: '风险目录化管理' }
+  },
+  {
+    path: '/risk/measure',
+    name: 'risk-measure',
+    component: () => import('../views/risk/MeasureView.vue'),
+    meta: { title: '风险管控措施制定' }
+  },
+  {
+    path: '/risk/plan',
+    name: 'risk-plan',
+    component: () => import('../views/risk/PlanView.vue'),
+    meta: { title: '风险应急预案' }
+  },
+  {
+    path: '/hazard/report',
+    name: 'hazard-report',
+    component: () => import('../views/hazard/ReportView.vue'),
+    meta: { title: 'AI随手拍' }
+  },
+  {
+    path: '/hazard/overview',
+    name: 'hazard-overview',
+    component: () => import('../views/hazard/HazardOverviewView.vue'),
+    meta: { title: '隐患信息总览' }
+  },
+  {
+    path: '/hazard/dispatch',
+    name: 'hazard-dispatch',
+    component: () => import('../views/hazard/DispatchView.vue'),
+    meta: { title: '隐患派单记录' }
+  },
+  {
+    path: '/hazard/inspect',
+    name: 'hazard-inspect',
+    component: () => import('../views/hazard/InspectView.vue'),
+    meta: { title: '隐患排查记录' }
+  },
   {
     path: '/equipment/categories',
     name: 'equipment-categories',
