@@ -14,7 +14,7 @@ const dialog=ref(false), draft=ref({}), error=ref(''), facilities=ref([]), detai
 const detail=computed(()=>store.byId(store.state.assets,detailId.value))
 watch(()=>route.query.asset,id=>{if(id && store.object(String(id))) detailId.value=String(id)},{immediate:true})
 const locked=computed(()=>Boolean(draft.value.id && store.assetReferenced(draft.value.id)))
-const categories=computed(()=>store.state.categories.filter(row=>row.objectType===draft.value.type && (row.enabled || row.id===draft.value.categoryId)))
+const categories=computed(()=>store.state.categories.filter(row=>store.isAssetCategory(row.id) && (row.enabled || row.id===draft.value.categoryId)))
 const compositionMembers=computed(()=>detail.value?store.assetMembers(detail.value.id):[])
 const systemMembers=computed(()=>detail.value?store.assetMembers(detail.value.id,'systemId'):[])
 const detailCoverage=computed(()=>[...new Set([detail.value?.spaceId,...compositionMembers.value.map(row=>row.spaceId),...systemMembers.value.map(row=>row.spaceId)].filter(Boolean))])
@@ -33,13 +33,15 @@ function save() { try { const selections={};if(draft.value.type==='组合设备'
     </section>
     <el-dialog v-model="dialog" :title="draft.id?'编辑设备 / 设施':'新增设备 / 设施'" class="ez-dialog equipment-editor" width="min(1000px,94vw)" align-center append-to-body destroy-on-close>
       <el-alert v-if="locked" title="此对象已被关系、计划或任务引用，类型和分类受限；关系、位置或状态修改不回写旧任务。" type="info" :closable="false" />
+      <el-alert v-if="draft.id && draft.categoryId && !store.isAssetCategory(draft.categoryId)" title="原台账分类不符合三级末级要求，资料及历史均保留。请先核对分类；本页不会自动清空、迁移分类或绕过引用保护。" type="warning" :closable="false" />
       <el-tabs v-model="editTab" class="detail-tabs">
         <el-tab-pane label="基本信息" name="base">
           <el-form class="form-grid" label-position="top" @submit.prevent="save">
             <el-form-item label="台账编号" required><el-input v-model="draft.code" :disabled="Boolean(draft.id)" maxlength="40" /></el-form-item>
             <el-form-item label="名称" required><el-input v-model="draft.name" maxlength="60" /></el-form-item>
-            <el-form-item label="管理对象类型" required><el-select v-model="draft.type" :disabled="locked" @change="draft.categoryId=''"><el-option v-for="type in ASSET_TYPES" :key="type" :value="type" /></el-select></el-form-item>
-            <el-form-item label="设备 / 设施分类" required><el-select v-model="draft.categoryId" :disabled="locked" filterable placeholder="选择可创建实例的分类"><el-option v-for="row in categories" :key="row.id" :value="row.id" :label="store.categoryPath(row.id)" /></el-select></el-form-item>
+            <el-form-item label="管理对象类型" required><el-select v-model="draft.type" :disabled="locked"><el-option v-for="type in ASSET_TYPES" :key="type" :value="type" /></el-select></el-form-item>
+            <el-form-item label="设备 / 设施分类" required><el-select v-model="draft.categoryId" :disabled="locked" filterable placeholder="选择启用的三级末级分类"><el-option v-if="draft.id && draft.categoryId && !store.isAssetCategory(draft.categoryId)" :value="draft.categoryId" :label="`${store.categoryPath(draft.categoryId) || draft.categoryId}（历史分类待核对）`" disabled /><el-option v-for="row in categories" :key="row.id" :value="row.id" :label="store.categoryPath(row.id)" /></el-select></el-form-item>
+            <p class="wide reference">分类表示业务归属；管理对象类型决定组成或系统关系。同一三级分类可以登记不同管理对象类型，改变类型不会清空有效分类。</p>
             <el-form-item label="型号规格（实物资料有型号时填写）"><el-input v-model="draft.model" maxlength="100" /></el-form-item>
             <el-form-item label="所属项目 / 院区" required><el-input :model-value="PROJECT.name" disabled /></el-form-item>
             <el-form-item label="安装空间" required><el-select v-model="draft.spaceId" filterable placeholder="选择已建空间，包括大厅、走廊等"><el-option v-for="row in store.state.spaces" :key="row.id" :value="row.id" :label="store.spacePath(row.id)" /></el-select></el-form-item>

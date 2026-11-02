@@ -9,6 +9,21 @@ export function displayTime(value) { return value ? new Date(value).toLocaleStri
 const requireValue = (condition, message) => { if (!condition) throw new Error(message) }
 const trimmed = value => String(value ?? '').trim()
 const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '') && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value
+const isFacility = object => ['设施', '建筑构件'].includes(object?.type)
+
+// Registration is determined by the three-level hierarchy, never legacy objectType.
+export function isAssetCategory(categories, id) {
+  let row = categories.find(category => category.id === id)
+  if (!row || categories.some(category => category.parentId === id)) return false
+  const seen = new Set()
+  while (row) {
+    if (seen.has(row.id)) return false
+    seen.add(row.id)
+    if (!row.parentId) return seen.size === 3
+    row = categories.find(category => category.id === row.parentId)
+  }
+  return false
+}
 
 export function createJointStore(initial = createEquipmentSeed(), { storage = null, clock = () => new Date() } = {}) {
   const state = reactive(clone(initial))
@@ -45,16 +60,19 @@ export function createJointStore(initial = createEquipmentSeed(), { storage = nu
   }
   function saveCategory(input) {
     const draft = clone(input), old = byId(state.categories, draft.id)
-    draft.parentId ||= ''; draft.objectType ||= ''
+    draft.parentId ||= ''
+    // Preserve existing cached metadata without accepting it as a new constraint.
+    delete draft.objectType
+    if (old && Object.hasOwn(old, 'objectType')) draft.objectType = old.objectType
     draft.code = trimmed(draft.code); draft.name = trimmed(draft.name)
     requireValue(draft.code && draft.name, '分类编码与名称必填')
     requireValue(draft.code.length <= 40 && draft.name.length <= 60 && trimmed(draft.description).length <= 500, '编码最多40字，名称最多60字，说明最多500字')
-    requireValue(!draft.objectType || ASSET_TYPES.includes(draft.objectType), '请选择有效的管理对象类型')
     uniqueCode(state.categories, draft); noCycle(state.categories, draft)
     if (draft.parentId) requireValue(byId(state.categories, draft.parentId), '上级分类不存在')
     requireValue(ancestors(state.categories, draft.parentId).length < 3, '一期分类最多三级')
+    if (draft.parentId && (!old || old.parentId !== draft.parentId)) requireValue(!state.assets.some(asset => asset.categoryId === draft.parentId), '上级分类已有台账引用，不能新增或移入下级，请先核对原台账分类')
     requireValue(!state.categories.some(row => row.id !== draft.id && row.parentId === draft.parentId && row.name === draft.name), '同一上级下分类名称不能重复')
-    if (old && categoryReferenced(old.id)) requireValue(['code', 'parentId', 'objectType'].every(key => old[key] === draft[key]), '分类已被引用，编码、上级和管理对象类型受限')
+    if (old && categoryReferenced(old.id)) requireValue(['code', 'parentId'].every(key => old[key] === draft[key]), '分类已被引用，编码和上级受限；名称及启停不改变原有身份')
     draft.id ||= nextId('category'); audit('分类', draft.id, old ? '编辑（历史引用保留）' : '新增')
     return upsert(state.categories, draft)
   }
@@ -101,7 +119,8 @@ export function createJointStore(initial = createEquipmentSeed(), { storage = nu
     requireValue(draft.projectId === PROJECT.id, '台账必须属于当前演示项目')
     uniqueCode(state.assets, draft)
     const category = byId(state.categories, draft.categoryId)
-    requireValue(category && category.objectType === draft.type && (category.enabled || old?.categoryId === category.id), '请选择启用且匹配对象类型的实例分类，目录分类不能建档')
+    requireValue(category && isAssetCategory(state.categories, category.id), '请选择三级末级设备 / 设施分类，非末级分类不能用于台账建档')
+    requireValue(category.enabled || old?.categoryId === category.id, '请选择启用的三级末级分类；停用分类仅保留原有台账归属')
     requireValue(draft.spaceId, '安装空间必填；请先在空间档案中建立准确位置，大厅和走廊也需建档')
     requireValue(byId(state.spaces, draft.spaceId)?.projectId === draft.projectId, '安装空间不存在或项目不一致')
     if (draft.systemId) requireValue(draft.systemId !== draft.id && byId(state.assets, draft.systemId)?.type === '专业系统' && byId(state.assets, draft.systemId)?.projectId === draft.projectId, '所属系统必须是其他同项目已建档的专业系统')
@@ -118,7 +137,7 @@ export function createJointStore(initial = createEquipmentSeed(), { storage = nu
       requireValue(!meterNames.has(meter.name), '同一对象下仪表名称不能重复'); meterNames.add(meter.name)
     }
     const uniqueFacilities = [...new Set(facilityIds ?? state.relations.filter(row=>row.sourceId === draft.id && row.type === '设施关联').map(row=>row.targetId))]
-    requireValue(uniqueFacilities.every(id => id !== draft.id && byId(state.assets, id)?.type === '设施' && byId(state.assets, id)?.projectId === draft.projectId), '只能关联其他同项目已登记设施，不可自关联')
+    requireValue(uniqueFacilities.every(id => id !== draft.id && isFacility(byId(state.assets, id)) && byId(state.assets, id)?.projectId === draft.projectId), '只能关联其他同项目已登记设施或建筑构件，不可自关联')
     const temporaryId = draft.id || '__new_asset__'
     const proposed = state.assets.filter(row=>row.id !== draft.id).map(row=>clone(row))
     proposed.push({...draft,id:temporaryId})
@@ -150,12 +169,14 @@ export function createJointStore(initial = createEquipmentSeed(), { storage = nu
   }
   function saveSpaceFacilities(id, facilityIds) {
     requireValue(CHECKABLE_SPACE_TYPES.includes(byId(state.spaces, id)?.type), '仅对已有房间、机房或公共区域维护明确设施关联')
-    requireValue(facilityIds.every(targetId => byId(state.assets, targetId)?.type === '设施'), '请选择已登记设施')
+    const space = byId(state.spaces, id)
+    requireValue(facilityIds.every(targetId => isFacility(byId(state.assets, targetId)) && byId(state.assets, targetId)?.projectId === space.projectId), '请选择同项目已登记设施或建筑构件')
     state.relations = state.relations.filter(row => row.sourceId !== id)
     ;[...new Set(facilityIds)].forEach(targetId => state.relations.push({ id: nextId('relation'), sourceId: id, sourceType: '空间', targetId, type: '设施关联' }))
     audit('空间设施关联', id, '更新明确关系（需要重新核对受影响计划）'); persist()
   }
   return attachInspection({ state, notice, now, nextId, persist, audit, upsert, byId, ancestors, categoryReferenced, spaceReferenced, assetReferenced, assetMembers, saveCategory, saveSpace, saveAsset, saveSpaceFacilities,
+    isAssetCategory: id => isAssetCategory(state.categories, id),
     categoryPath: id => ancestors(state.categories, id).map(row => row.name).join(' / '),
     spacePath: id => ancestors(state.spaces, id).map(row => row.name).join(' / '),
     facilityIds: id => state.relations.filter(row => row.sourceId === id && row.type === '设施关联').map(row => row.targetId),
@@ -201,8 +222,7 @@ function attachInspection(store) {
       if (roles.every(role=>role === 'self') && group.targetType) requireValue((group.targetType === '空间' ? '空间' : typeOf({type:group.targetType})) === rule.rootType, '当前对象自身分组的作用对象类型必须与规则根类型一致')
       if (roles.some(role=>role !== 'self')) requireValue(group.categoryId || group.targetType, '非自身分组必须明确目标类型或分类')
       if (group.categoryId) requireValue(byId(state.categories, group.categoryId), '分组过滤分类不存在')
-      const category = byId(state.categories,group.categoryId)
-      if (group.categoryId && group.targetType) requireValue(group.targetType !== '空间' && (!category.objectType || category.objectType === group.targetType), '分组适用分类必须与作用对象类型一致')
+      if (group.categoryId) requireValue(group.targetType !== '空间', '空间分组不使用设备分类，请通过空间范围和用途匹配')
       requireValue((group.models || []).every(model=>trimmed(model)) && (group.states || []).every(status=>['运行','备用','停用','使用中','暂不使用'].includes(status)), '分组型号或运行工况无效')
       requireValue(!group.objectId && !group.assetId && !group.spaceId, '分组只定义类型与匹配条件，不能绑定具体设备或空间ID')
       if (publishing && group.required) requireValue(group.items.length, `必需分组“${group.name}”没有检查项`)
@@ -245,7 +265,8 @@ function attachInspection(store) {
     if (row.status !== '已启用') validateRule(row, true)
     row.status = row.status === '已启用' ? '已停用' : '已启用'; audit('巡检规则', id, row.status); persist()
   }
-  function typeOf(object) { return object?.type === '机房' || SPACE_TYPES.includes(object?.type) ? '空间' : ({ 单台设备:'设备', 组合设备:'组合', 专业系统:'系统', 设施:'设施', 建筑构件:'设施' })[object?.type] }
+  // “设施” is a scope family; group.targetType still compares the exact asset type.
+  function typeOf(object) { return SPACE_TYPES.includes(object?.type) ? '空间' : ({ 单台设备:'设备', 组合设备:'组合', 专业系统:'系统', 设施:'设施', 建筑构件:'设施' })[object?.type] }
   function normalizedRole(role, rootType) { return role === 'members' ? rootType === '组合' ? 'compositionMembers' : 'systemMembers' : role }
   function matchingRoles(rootType) {
     const allowed = {空间:['self','spaceEquipment','compositionMembers','systemMembers','linkedFacility'],设备:['self','linkedFacility'],组合:['self','compositionMembers','linkedFacility'],系统:['self','compositionMembers','systemMembers','linkedFacility'],设施:['self','linkedFacility']}
@@ -311,7 +332,7 @@ function attachInspection(store) {
             }
             if (group.includeSystemFacilities) for (const system of relatedSystems(root)) {
               for (const id of store.facilityIds(system.id)) { const object=store.object(id); if(object)add(object,`专业系统明确设施关联 · ${system.name}`,role,inspectionPosition(object)) }
-              store.assetMembers(system.id,'systemId',true).filter(object=>object.type === '设施').forEach(object=>add(object,`专业系统设施成员 · ${system.name}`,role,inspectionPosition(object)))
+              store.assetMembers(system.id,'systemId',true).filter(isFacility).forEach(object=>add(object,`专业系统设施成员 · ${system.name}`,role,inspectionPosition(object)))
             }
           }
         }
@@ -539,7 +560,7 @@ export function migrateDemoState(snapshot) {
       if (state[collection].some(row=>row.id === sample.id)) continue
       const collision = state[collection].some(row=>row.code?.toLowerCase() === sample.code.toLowerCase() || (row.name === sample.name && (collection === 'assets' || row.parentId === sample.parentId)))
       const validParent = collection !== 'categories' && collection !== 'spaces' || !sample.parentId || state[collection].some(row=>row.id === sample.parentId)
-      const validAsset = collection !== 'assets' || (state.spaces.some(row=>row.id === sample.spaceId) && state.categories.some(row=>row.id === sample.categoryId && row.objectType === sample.type && row.enabled))
+      const validAsset = collection !== 'assets' || (state.spaces.some(row=>row.id === sample.spaceId) && isAssetCategory(state.categories, sample.categoryId) && state.categories.some(row=>row.id === sample.categoryId && row.enabled))
       if (collision || !validParent || !validAsset) { notices.push(`演示样例“${sample.name}”未补入：存在编码 / 名称冲突或依赖待补充；已有资料保留。`); continue }
       state[collection].push(clone(sample))
     }

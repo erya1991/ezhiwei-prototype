@@ -40,7 +40,7 @@ const label=row=>`${row.code} · ${row.name}`
     </section>
     <section class="relation-block">
       <h3>明确关联的共用设施（可选）</h3><p class="hint">例如一段共用蒸汽管路可供多处引用，但实际档案只保留一份。关联不会把设施变成当前对象的子设备。</p>
-      <el-form label-position="top"><el-form-item label="明确关联设施"><el-select :model-value="facilityIds" multiple filterable placeholder="选择既有设施档案" @update:model-value="emit('update:facilityIds',$event)"><el-option v-for="row in candidates.filter(row=>row.type==='设施')" :key="row.id" :value="row.id" :label="label(row)" /></el-select></el-form-item></el-form>
+      <el-form label-position="top"><el-form-item label="明确关联设施 / 建筑构件"><el-select :model-value="facilityIds" multiple filterable placeholder="选择既有设施或建筑构件档案" @update:model-value="emit('update:facilityIds',$event)"><el-option v-for="row in candidates.filter(row=>['设施','建筑构件'].includes(row.type))" :key="row.id" :value="row.id" :label="label(row)" /></el-select></el-form-item></el-form>
     </section>
     <section class="relation-block">
       <h3>空间位置 · 独立维护</h3><p>当前安装 / 管理空间：{{ store.spacePath(asset.spaceId) || '请在基本信息选择安装空间' }}</p>

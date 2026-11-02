@@ -172,9 +172,10 @@ test('compatibility: adding the new sample rule preserves every existing rule, t
   const collision=migrateDemoState(old);assert.ok(collision.notices.length);assert.equal(collision.state.rules.some(row=>row.id==='rule-boiler-room-daily'),false)
 })
 
-test('validation: group type/category and matching mode must agree and rules cannot bind instance IDs',()=>{
+test('validation: category and type are independent while matching modes and instance restrictions remain',()=>{
   const s=setup(),rule=daily(s)
-  rule.groups[1].targetType='设施';assert.throws(()=>s.validateRule(rule,true),/作用对象类型一致/)
+  rule.groups[1].targetType='设施';assert.doesNotThrow(()=>s.validateRule(rule,true))
+  const result=s.preview(rule,['space-boiler']);assert.match(result.issues.join(''),/锅炉运行检查.*类型\/分类条件/)
   rule.groups[1].targetType='单台设备';rule.groups[1].objectId='asset-boiler-1';assert.throws(()=>s.validateRule(rule,true),/不能绑定具体/)
   delete rule.groups[1].objectId;rule.groups[0].targetType='单台设备';assert.throws(()=>s.validateRule(rule,true),/当前对象自身.*根类型一致/)
   rule.rootType='设备';assert.throws(()=>s.validateRule(rule,true),/匹配方式.*不适用/)

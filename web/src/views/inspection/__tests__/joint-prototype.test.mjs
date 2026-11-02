@@ -1,13 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createJointStore, createDemoState, migrateDemoState, clone, taskEntries, evaluateItem, resultKey } from '../../../data/equipmentInspectionMock.js'
-import { createEquipmentSeed, REVISION_SAMPLE_IDS } from '../../../data/equipmentInspectionSeed.js'
+import { ASSET_TYPES, createEquipmentSeed, REVISION_SAMPLE_IDS } from '../../../data/equipmentInspectionSeed.js'
 
 const fresh = () => createJointStore(createEquipmentSeed(), { clock: () => new Date('2026-10-29T03:00:00Z') })
 test('A: stable asset/category/space/system references resolve to one identity', () => {
   const s = fresh()
   for (const asset of s.state.assets) {
-    assert.equal(s.byId(s.state.categories, asset.categoryId).objectType, asset.type)
+    assert.ok(s.isAssetCategory(asset.categoryId))
+    assert.ok(ASSET_TYPES.includes(asset.type))
     assert.ok(s.byId(s.state.spaces, asset.spaceId))
     if (asset.systemId) assert.equal(s.object(asset.systemId).type, '专业系统')
     if (asset.parentId) assert.equal(s.object(asset.parentId).type, '组合设备')
@@ -27,7 +28,7 @@ test('A: referenced category identifiers are protected while disabling preserves
   assert.throws(() => s.saveCategory({...row,code:'CHANGED'}), /已被引用/)
   s.saveCategory({...row,enabled:false})
   assert.equal(s.object('asset-boiler-1').categoryId,row.id)
-  assert.throws(() => s.saveAsset({...clone(s.object('asset-boiler-1')),id:'',code:'BL-NEW'}), /启用且匹配/)
+  assert.throws(() => s.saveAsset({...clone(s.object('asset-boiler-1')),id:'',code:'BL-NEW'}), /启用的三级末级/)
 })
 test('A: a new room must reference a floor and have a locating description', () => {
   const s=fresh(), row=clone(s.object('space-boiler'))
@@ -41,9 +42,9 @@ test('A: building-only fields and referenced room moves are protected', () => {
   assert.throws(()=>s.saveSpace({...room,structure:'框架'}), /仅适用于楼栋/)
   assert.throws(()=>s.saveSpace({...room,parentId:'space-f1'}), /已有下级或引用/)
 })
-test('A: directory categories cannot become assets and identifiers cannot change', () => {
+test('A: non-third-level categories cannot become assets and identifiers cannot change', () => {
   const s=fresh(), row=clone(s.object('asset-boiler-1'))
-  assert.throws(()=>s.saveAsset({...row,id:'',code:'TEST',categoryId:'cat-heat'}), /实例分类/)
+  assert.throws(()=>s.saveAsset({...row,id:'',code:'TEST',categoryId:'cat-heat'}), /三级末级/)
   assert.throws(()=>s.saveAsset({...row,code:'MOVED'}), /编号不可修改/)
   assert.throws(()=>s.saveAsset({...row,spaceId:'',location:''}), /准确位置/)
 })

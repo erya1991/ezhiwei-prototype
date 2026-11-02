@@ -8,20 +8,21 @@ const advanced=ref(Boolean(props.group.models?.length || props.group.states?.len
 const models=computed(()=>[...new Set(store.state.assets.map(row=>row.model).filter(Boolean))])
 const targetTypes=['空间',...ASSET_TYPES]
 const compatible=computed(()=>roles.value.some(role=>role.value===props.group.role))
-const categories=computed(()=>store.state.categories.filter(row=>row.enabled && (!row.objectType || row.objectType===props.group.targetType)))
+const categories=computed(()=>store.state.categories.filter(row=>row.enabled))
 const facilityMode=computed(()=>[props.group.role,...(props.group.extraRoles || [])].includes('linkedFacility'))
 watch(()=>props.rootType,(value,oldValue)=>{
   props.group.role=store.normalizedRole(props.group.role,props.rootType)
   const defaults={设备:'单台设备',空间:'空间',组合:'组合设备',系统:'专业系统',设施:'设施'}
   if (props.group.role==='self' && (!props.group.targetType || props.group.targetType===defaults[oldValue])) {
     props.group.targetType=defaults[value]
-    if(oldValue && value!==oldValue){props.group.categoryId='';props.group.models=[];props.group.states=[]}
+    if(oldValue && value!==oldValue){if(value==='空间')props.group.categoryId='';props.group.models=[];props.group.states=[]}
   }
 },{immediate:true})
 function changeRole(){
   const group=props.group
-  group.categoryId='';group.models=[];group.states=[]
+  group.models=[];group.states=[]
   group.targetType=group.role==='self'?({设备:'单台设备',空间:'空间',组合:'组合设备',系统:'专业系统',设施:'设施'})[props.rootType]:group.role==='linkedFacility'?'设施':'单台设备'
+  if(group.targetType==='空间')group.categoryId=''
   group.extraRoles=(group.extraRoles || []).filter(role=>role!==group.role)
   if(group.role==='linkedFacility' && group.includeSystemFacilities===undefined)group.includeSystemFacilities=true
 }
@@ -29,12 +30,13 @@ function changeRole(){
 <template>
   <section class="matching-editor">
     <h3>本组检查对象自动匹配</h3>
-    <p class="hint">只定义类型、分类与结构化关系，不选择具体设备。下面的检查项继承本组条件。</p>
+    <p class="hint">只定义类型、分类与结构化关系，不选择具体设备。分类独立匹配其下属类别，作用对象类型按实际台账类型精确匹配；下面的检查项继承本组条件。</p>
+    <p v-if="rootType==='设施' || group.targetType==='建筑构件'" class="hint">“设施”范围可选择设施或建筑构件；本组选择“设施”时只检查一般设施，选择“建筑构件”时只检查符合分类条件的建筑构件。</p>
     <el-form label-position="top" class="matching-grid">
       <el-form-item label="分组名称" required><el-input v-model="group.name" maxlength="80" /></el-form-item>
-      <el-form-item label="作用对象类型" required><el-select v-model="group.targetType" :aria-label="`${group.name || '未命名分组'}作用对象类型`" @change="group.categoryId='';group.models=[];group.states=[]"><el-option v-for="type in targetTypes" :key="type" :value="type" /></el-select></el-form-item>
+      <el-form-item label="作用对象类型" required><el-select v-model="group.targetType" :aria-label="`${group.name || '未命名分组'}作用对象类型`" @change="value=>{if(value==='空间')group.categoryId='';group.models=[];group.states=[]}"><el-option v-for="type in targetTypes" :key="type" :value="type" /></el-select></el-form-item>
       <el-form-item label="对象匹配方式" required><el-select v-model="group.role" :aria-label="`${group.name || '未命名分组'}对象匹配方式`" @change="changeRole"><el-option v-if="!compatible" :value="group.role" :label="`${GROUP_ROLES.find(row=>row.value===group.role)?.label || group.role}（请调整）`" disabled /><el-option v-for="role in roles" :key="role.value" :value="role.value" :label="role.label" /></el-select></el-form-item>
-      <el-form-item v-if="group.targetType!=='空间'" label="适用分类（可选）"><el-select v-model="group.categoryId" :aria-label="`${group.name || '未命名分组'}适用分类`" filterable clearable placeholder="按分类ID匹配，不填则仅按类型"><el-option v-for="row in categories" :key="row.id" :value="row.id" :label="store.categoryPath(row.id)" /></el-select></el-form-item>
+      <el-form-item v-if="group.targetType!=='空间'" label="适用分类（可选）"><el-select v-model="group.categoryId" :aria-label="`${group.name || '未命名分组'}适用分类`" filterable clearable placeholder="包含所选分类及其全部下属类别"><el-option v-for="row in categories" :key="row.id" :value="row.id" :label="store.categoryPath(row.id)" /></el-select></el-form-item>
       <el-form-item label="没有匹配对象时" class="wide"><el-switch v-model="group.required" active-text="必需组，阻止启用计划" inactive-text="可选组，明确排除" /></el-form-item>
       <div v-if="facilityMode" class="wide facility-help"><el-checkbox v-model="group.includeSystemFacilities">同时匹配关联专业系统的设施</el-checkbox><p class="hint">使用空间/对象的明确设施关联，以及已登记专业系统的设施关系或成员关系；不按名称推断。明确关联到空间的设施按该检查空间保存；仅通过系统找到的设施仍按自身安装空间分点。</p></div>
     </el-form>

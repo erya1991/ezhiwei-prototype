@@ -28,7 +28,7 @@ export const GROUP_ROLES = [
 export const INPUT_TYPES = ['数值', '状态', '文本', '照片']
 export const DEMO_BASIS = '模拟演示参考条件，未经专业确认，不得用于现场安全判断'
 
-const category = (id, code, name, parentId = '', objectType = '') => ({ id, code, name, parentId, objectType, enabled: true, description: '医院建筑与支撑设施演示分类' })
+const category = (id, code, name, parentId = '') => ({ id, code, name, parentId, enabled: true, description: '医院建筑与支撑设施演示分类' })
 const space = (id, code, name, type, parentId, extra = {}) => ({ id, code, name, type, parentId, projectId: PROJECT.id, usage: '', structure: '', deliveredAt: '', ownerId: '', maintainerId: 'org-maintenance', location: '', status: '使用中', ...extra })
 const asset = (id, code, name, categoryId, type, spaceId, extra = {}) => ({ id, code, name, categoryId, type, spaceId, projectId: PROJECT.id, model: '', location: '', systemId: '', parentId: '', organizationId: 'org-maintenance', status: '运行', notes: '', meters: [], ...extra })
 
@@ -43,26 +43,26 @@ export function createEquipmentSeed() {
     categories: [
       category('cat-support', 'SUP', '建筑与机电支撑设施'),
       category('cat-heat', 'SUP-01', '热力保障', 'cat-support'),
-      category('cat-boiler', 'SUP-01-01', '锅炉', 'cat-heat', '单台设备'),
-      category('cat-steam', 'SUP-01-02', '蒸汽管路', 'cat-heat', '设施'),
-      category('cat-heat-system', 'SUP-01-03', '热力系统', 'cat-heat', '专业系统'),
+      category('cat-boiler', 'SUP-01-01', '锅炉', 'cat-heat'),
+      category('cat-steam', 'SUP-01-02', '蒸汽管路', 'cat-heat'),
+      category('cat-heat-system', 'SUP-01-03', '热力系统', 'cat-heat'),
       category('cat-air', 'SUP-02', '压缩空气保障', 'cat-support'),
-      category('cat-compressor', 'SUP-02-01', '空压机', 'cat-air', '单台设备'),
-      category('cat-air-system', 'SUP-02-02', '压缩空气系统', 'cat-air', '专业系统'),
-      category('cat-air-pipe', 'SUP-02-03', '压缩空气管路', 'cat-air', '设施'),
+      category('cat-compressor', 'SUP-02-01', '空压机', 'cat-air'),
+      category('cat-air-system', 'SUP-02-02', '压缩空气系统', 'cat-air'),
+      category('cat-air-pipe', 'SUP-02-03', '压缩空气管路', 'cat-air'),
       category('cat-electric', 'SUP-03', '供配电', 'cat-support'),
-      category('cat-cabinet', 'SUP-03-01', '配电柜', 'cat-electric', '单台设备'),
-      category('cat-power-system', 'SUP-03-02', '供配电系统', 'cat-electric', '专业系统'),
+      category('cat-cabinet', 'SUP-03-01', '配电柜', 'cat-electric'),
+      category('cat-power-system', 'SUP-03-02', '供配电系统', 'cat-electric'),
       category('cat-hvac', 'SUP-04', '空调保障', 'cat-support'),
-      category('cat-hvac-group', 'SUP-04-01', '空调组合', 'cat-hvac', '组合设备'),
-      category('cat-hvac-unit', 'SUP-04-02', '空调机组', 'cat-hvac', '单台设备'),
-      category('cat-hvac-system', 'SUP-04-03', '空调系统', 'cat-hvac', '专业系统'),
+      category('cat-hvac-group', 'SUP-04-01', '空调组合', 'cat-hvac'),
+      category('cat-hvac-unit', 'SUP-04-02', '空调机组', 'cat-hvac'),
+      category('cat-hvac-system', 'SUP-04-03', '空调系统', 'cat-hvac'),
       category('cat-building', 'SUP-05', '建筑构件', 'cat-support'),
-      category('cat-door', 'SUP-05-01', '防火门', 'cat-building', '建筑构件'),
+      category('cat-door', 'SUP-05-01', '防火门', 'cat-building'),
       category('cat-water', 'SUP-06', '给排水保障', 'cat-support'),
-      category('cat-water-system', 'SUP-06-01', '给排水系统', 'cat-water', '专业系统'),
+      category('cat-water-system', 'SUP-06-01', '给排水系统', 'cat-water'),
       category('cat-fire', 'SUP-07', '消防保障', 'cat-support'),
-      category('cat-fire-system', 'SUP-07-01', '消防系统', 'cat-fire', '专业系统')
+      category('cat-fire-system', 'SUP-07-01', '消防系统', 'cat-fire')
     ],
     spaces: [
       space('space-campus', 'CAMPUS', '示范院区', '院区', '', { usage: '医疗辅助保障（模拟）' }),
