@@ -1,11 +1,14 @@
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
-import { kbEntries as rawEntries, kbExperts, kbCategories, KB_DOMAINS, KB_EXPERT_ROLE } from '../data/knowledgeBase'
+import { ref, computed, watch } from 'vue'
+import { kbExperts, kbCategories } from '../data/knowledgeBase'
+import { legacyEntries, knowledgeStore, demoContext, ROLES } from '../data/knowledgeAiMock.js'
+import MaterialManager from './knowledge/MaterialManager.vue'
 
-const entries = ref(rawEntries)
+const entries = legacyEntries
+const manager = ref(null)
 
 // ---- 统计（本月新增会随提交递增）----
-const monthlyNew = ref(47)
+const monthlyNew = computed(() => entries.value.filter(e => e.time.startsWith(new Date().toLocaleString('sv-SE').slice(0, 7))).length)
 
 // ---- 过滤状态 ----
 const kbFilter = ref('all')
@@ -13,7 +16,7 @@ const searchQuery = ref('')
 const timeFilter = ref('all')
 const expertFilter = ref('')   // 点击“查看某专家全部条目”时的覆盖过滤
 const categoryFilter = ref('') // 点击分类树时的覆盖过滤
-const activeTab = ref('entries')
+const activeTab = ref('materials')
 
 const filterTags = [
   { filter: 'all', label: '全部' },
@@ -23,7 +26,7 @@ const filterTags = [
   { filter: '供配电', label: '供配电' },
   { filter: '电梯', label: '电梯' },
   { filter: '消防', label: '消防' },
-  { filter: '安防', label: '安防监控' },
+  { filter: '安防监控', label: '安防监控' },
   { filter: '医用物流', label: '医用物流' }
 ]
 
@@ -58,17 +61,12 @@ function toggleTree(name) {
 
 // ---- 收藏 ----
 function toggleFav(e) {
-  e.fav = !e.fav
+  const d = knowledgeStore.getDocument(e.id)
+  d.fav = !d.fav
 }
 
-// ---- 详情弹窗 ----
-const detailEntry = ref(null)
-function openDetail(e) {
-  detailEntry.value = e
-}
-function closeDetail() {
-  detailEntry.value = null
-}
+function openDetail(e) { manager.value.preview(e.id, e.version) }
+function openAdd() { manager.value.openCreate() }
 
 // ---- 专家弹窗（macOS 弹性动画）----
 const expert = ref(null)
@@ -113,74 +111,15 @@ function filterByCategory(cat) {
   activeTab.value = 'entries'
 }
 
-// ---- 新增知识条目 ----
-const addShow = ref(false)
-const addForm = reactive({ title: '', domain: '', expert: '', desc: '', content: '' })
-const addFile = ref(null)
-
-const uploadText = computed(() => {
-  const f = addFile.value
-  if (!f) return '点击选择附件（支持 PDF / Word / 图片，单个 ≤ 20MB）'
-  const size = f.size >= 1048576 ? (f.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(f.size / 1024)) + ' KB'
-  return '已选择：' + f.name + '（' + size + '）'
-})
-
-function openAdd() {
-  addForm.title = ''
-  addForm.domain = ''
-  addForm.expert = ''
-  addForm.desc = ''
-  addForm.content = ''
-  addFile.value = null
-  addShow.value = true
-}
-function closeAdd() {
-  addShow.value = false
-}
-function onFileChange(e) {
-  addFile.value = (e.target.files && e.target.files[0]) || null
-}
-
-function submitAdd() {
-  const { title, domain, expert, desc, content } = addForm
-  if (!title.trim()) { window.alert('请填写知识条目标题'); return }
-  if (!domain) { window.alert('请选择所属分类'); return }
-  if (!expert) { window.alert('请选择关联专家'); return }
-  if (!content.trim()) { window.alert('请填写正文内容'); return }
-
-  const now = new Date()
-  const time = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0')
-  const newEntry = {
-    id: Date.now(),
-    title: title.trim(),
-    domain,
-    expert,
-    expertRole: KB_EXPERT_ROLE[expert] || '后勤运维专家',
-    expertAvatar: (kbExperts.find((x) => x.name === expert) || {}).avatar || 'c1',
-    time,
-    desc: desc.trim() || title.trim(),
-    content: '<p>' + content.split(/\n{2,}/).map((p) => p.replace(/\n/g, '<br>')).join('</p><p>') + '</p>',
-    fav: false
-  }
-
-  entries.value.unshift(newEntry)
-  expertFilter.value = ''
-  categoryFilter.value = ''
-  activeTab.value = 'entries'
-  monthlyNew.value += 1
-  closeAdd()
-  window.alert('✓ 知识条目「' + title.trim() + '」已提交，等待审核发布')
-}
-
 function importExport(action) {
   window.alert((action === 'export' ? '导出' : '导入') + '知识库数据\n（在实际部署中，触发文件下载/上传）')
 }
 </script>
 
 <template>
-  <div class="ai-page">
+  <div class="ai-page knowledge-page">
     <!-- 搜索栏 -->
-    <div class="kb-search-wrap">
+    <div v-show="activeTab !== 'materials'" class="kb-search-wrap">
       <div class="kb-search-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" v-model="searchQuery" placeholder="搜索专家姓名、知识条目、关键词…">
@@ -191,7 +130,7 @@ function importExport(action) {
     </div>
 
     <!-- 过滤行 -->
-    <div class="kb-filter-row">
+    <div v-show="activeTab !== 'materials'" class="kb-filter-row">
       <span class="kb-filter-label">知识分类：</span>
       <button
         v-for="t in filterTags" :key="t.filter"
@@ -209,11 +148,11 @@ function importExport(action) {
     <div class="kb-stat-row">
       <div class="kb-stat-card">
         <div class="kb-stat-icon blue">📚</div>
-        <div><div class="kb-stat-val">1,286</div><div class="kb-stat-lbl">知识库条目总数</div></div>
+        <div><div class="kb-stat-val">{{ entries.length }}</div><div class="kb-stat-lbl">知识库条目总数</div></div>
       </div>
       <div class="kb-stat-card">
         <div class="kb-stat-icon green">👨‍⚕️</div>
-        <div><div class="kb-stat-val">26</div><div class="kb-stat-lbl">收录专家人数</div></div>
+        <div><div class="kb-stat-val">{{ kbExperts.length }}</div><div class="kb-stat-lbl">收录专家人数</div></div>
       </div>
       <div class="kb-stat-card">
         <div class="kb-stat-icon orange">🆕</div>
@@ -221,16 +160,19 @@ function importExport(action) {
       </div>
       <div class="kb-stat-card">
         <div class="kb-stat-icon purple">🔥</div>
-        <div><div class="kb-stat-val">892</div><div class="kb-stat-lbl">本周高频访问</div></div>
+        <div><div class="kb-stat-val">{{ knowledgeStore.documents.filter(d => d.currentVersion && !d.archived).length }}</div><div class="kb-stat-lbl">当前有效资料</div></div>
       </div>
     </div>
 
     <!-- Tab 栏 -->
     <div class="kb-tab-bar">
+      <button class="kb-tab" :class="{ active: activeTab === 'materials' }" @click="activeTab = 'materials'">资料管理</button>
       <button class="kb-tab" :class="{ active: activeTab === 'entries' }" @click="activeTab = 'entries'">📋 知识条目</button>
       <button class="kb-tab" :class="{ active: activeTab === 'experts' }" @click="activeTab = 'experts'">👨‍🔬 专家名录</button>
       <button class="kb-tab" :class="{ active: activeTab === 'categories' }" @click="activeTab = 'categories'">📂 分类目录</button>
     </div>
+
+    <MaterialManager ref="manager" v-show="activeTab === 'materials'" />
 
     <!-- TAB 1：知识条目 -->
     <div class="kb-tab-content" :class="{ active: activeTab === 'entries' }">
@@ -245,7 +187,7 @@ function importExport(action) {
           <div class="kb-card-desc">{{ e.desc }}</div>
           <div class="kb-card-actions">
             <button class="kb-card-btn primary" @click.stop="openDetail(e)">📄 查看详情</button>
-            <button class="kb-card-btn" @click.stop="window.alert('编辑功能：条目 #' + e.id + '\n（在实际部署中，此处可弹出编辑表单，连接后端API进行修改）')">✏️ 编辑</button>
+            <button class="kb-card-btn" @click.stop="manager.edit(e.id)" :disabled="demoContext.role !== ROLES[0] || ['待审核','已归档'].includes(knowledgeStore.latest(knowledgeStore.getDocument(e.id)).status) || knowledgeStore.latest(knowledgeStore.getDocument(e.id)).processing === '加工中'">✏️ 编辑</button>
             <button class="kb-card-btn fav" @click.stop="toggleFav(e)">{{ e.fav ? '★ 已收藏' : '☆ 收藏' }}</button>
           </div>
         </div>
@@ -266,7 +208,7 @@ function importExport(action) {
               <span v-for="d in e.domain" :key="d" class="kb-card-domain">{{ d }}</span>
             </div>
           </div>
-          <div style="text-align:right;"><span class="kb-expert-count">📚 {{ e.count }} 条知识</span></div>
+          <div style="text-align:right;"><span class="kb-expert-count">📚 {{ entries.filter(x => x.expert === e.name).length }} 条知识</span></div>
         </div>
       </div>
     </div>
@@ -277,17 +219,17 @@ function importExport(action) {
         <div v-for="(cat, i) in kbCategories" :key="cat.name" class="kb-tree-node">
           <div class="kb-tree-parent" :class="{ expanded: expandedCats.has(cat.name) }" @click="toggleTree(cat.name)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-            {{ cat.name }} <span class="badge">{{ cat.count }}</span>
+            {{ cat.name }} <span class="badge">{{ entries.filter(e => e.domain === cat.name.replace(/系统$/, '')).length }}</span>
           </div>
           <div class="kb-tree-children" :class="{ show: expandedCats.has(cat.name) }">
-            <div v-for="ch in cat.children" :key="ch.name" class="kb-tree-child" @click="filterByCategory(ch.name)">{{ ch.name }} <span class="badge">{{ ch.count }}</span></div>
+            <div v-for="ch in cat.children" :key="ch.name" class="kb-tree-child" @click="filterByCategory(ch.name)">{{ ch.name }} <span class="badge">{{ entries.filter(e => e.title.includes(ch.name) || e.domain.includes(ch.name)).length }}</span></div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 新增按钮 -->
-    <button class="kb-fab" @click="openAdd">＋ 新增知识条目</button>
+    <button v-if="activeTab !== 'materials' && demoContext.role === ROLES[0]" class="kb-fab" @click="openAdd">＋ 新增知识条目</button>
   </div>
 
   <!-- 专家详情弹窗 -->
@@ -315,7 +257,7 @@ function importExport(action) {
         <div class="expert-section-title">📋 专家简介</div>
         <div class="expert-intro" v-html="expert.bio"></div>
         <div class="expert-stats-row">
-          <div class="expert-stat-item"><div class="expert-stat-num">{{ expert.count }}</div><div class="expert-stat-lbl">知识条目</div></div>
+          <div class="expert-stat-item"><div class="expert-stat-num">{{ entries.filter(x => x.expert === expert.name).length }}</div><div class="expert-stat-lbl">知识条目</div></div>
           <div class="expert-stat-item"><div class="expert-stat-num">{{ expert.domain.length }}</div><div class="expert-stat-lbl">专业领域</div></div>
           <div class="expert-stat-item"><div class="expert-stat-num">30+</div><div class="expert-stat-lbl">年经验</div></div>
         </div>
@@ -329,73 +271,17 @@ function importExport(action) {
     </div>
   </div>
 
-  <!-- 知识条目详情弹窗 -->
-  <div class="kb-modal-overlay" :class="{ show: !!detailEntry }" @click.self="closeDetail">
-    <div class="kb-modal">
-      <div style="position:relative;">
-        <button class="kb-modal-close" style="position:absolute;top:0;right:0;" @click="closeDetail">✕</button>
-        <div class="kb-modal-title">{{ detailEntry?.title }}</div>
-        <div style="display:flex;gap:8px;margin-bottom:14px;">
-          <span class="kb-card-domain">{{ detailEntry?.domain }}</span>
-        </div>
-        <div class="kb-modal-body" v-html="detailEntry?.content"></div>
-        <div class="kb-modal-footer">
-          <span>👤 {{ detailEntry?.expert }} · {{ detailEntry?.expertRole }}</span>
-          <span>🕐 {{ detailEntry?.time }}</span>
-          <span>📋 来源：医工委专家知识库</span>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- 新增知识条目弹窗 -->
-  <div class="kb-modal-overlay" :class="{ show: addShow }" @click.self="closeAdd">
-    <div class="kb-add-modal">
-      <div class="kb-add-head">
-        <div>
-          <div class="kb-add-title">＋ 新增知识条目</div>
-          <div class="kb-add-sub">填写条目内容，提交后将收录至医工委专家知识库</div>
-        </div>
-        <button class="kb-modal-close" style="position:static;flex-shrink:0;" @click="closeAdd">✕</button>
-      </div>
-      <div class="kb-add-body">
-        <label class="kb-add-label">知识条目标题 <span class="kb-add-req">*</span></label>
-        <input class="kb-add-input" v-model="addForm.title" maxlength="80" placeholder="例：手术室洁净空调温湿度超标故障树分析与标准处置SOP">
-
-        <div class="kb-add-row">
-          <div class="kb-add-col">
-            <label class="kb-add-label">所属分类 <span class="kb-add-req">*</span></label>
-            <select class="kb-add-input" v-model="addForm.domain">
-              <option v-for="d in KB_DOMAINS" :key="d" :value="d">{{ d }}</option>
-            </select>
-          </div>
-          <div class="kb-add-col">
-            <label class="kb-add-label">关联专家 <span class="kb-add-req">*</span></label>
-            <select class="kb-add-input" v-model="addForm.expert">
-              <option v-for="x in kbExperts" :key="x.id" :value="x.name">{{ x.name }}（{{ x.role }}）</option>
-            </select>
-          </div>
-        </div>
-
-        <label class="kb-add-label">内容摘要</label>
-        <textarea class="kb-add-input kb-add-area" v-model="addForm.desc" rows="2" maxlength="200" placeholder="用一两句话概括核心内容，将显示在知识条目卡片上…"></textarea>
-
-        <label class="kb-add-label">正文内容 <span class="kb-add-req">*</span></label>
-        <textarea class="kb-add-input kb-add-area" v-model="addForm.content" rows="9" placeholder="建议包含：故障现象 / 故障树分析（FTA）/ 标准处置SOP / 依据的国标·行标…"></textarea>
-
-        <label class="kb-add-label">附件上传（可选）</label>
-        <div class="kb-add-upload" @click="$refs.addFileInput.click()">
-          <div class="kb-add-upload-icon">{{ addFile ? '📄' : '📎' }}</div>
-          <div class="kb-add-upload-text">{{ uploadText }}</div>
-        </div>
-        <input ref="addFileInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" style="display:none" @change="onFileChange">
-
-        <div class="kb-add-tip">💡 知识条目将经管理员审核后发布，并回传至 AI 模型持续迭代优化。</div>
-      </div>
-      <div class="kb-add-foot">
-        <button class="kb-add-cancel" @click="closeAdd">取消</button>
-        <button class="kb-add-submit" @click="submitAdd">✓ 提交知识条目</button>
-      </div>
-    </div>
-  </div>
 </template>
+<style scoped>
+.knowledge-page { min-width:0; }
+.knowledge-page .kb-stat-row { gap:12px; margin-bottom:12px; }
+.knowledge-page .kb-stat-card { padding:10px 16px; gap:12px; }
+.knowledge-page .kb-stat-icon { width:32px; height:32px; font-size:18px; }
+.knowledge-page .kb-stat-val { font-size:20px; line-height:1.2; }
+.knowledge-page .kb-stat-card > div:last-child { display:flex; align-items:center; gap:10px; }
+.knowledge-page .kb-tab-bar { margin-bottom:14px; }
+.knowledge-page > * { flex-shrink:0; min-width:0; }
+.kb-filter-row,.kb-search-wrap { flex-wrap:wrap; }
+.kb-card-title,.kb-card-desc { overflow-wrap:anywhere; }
+</style>

@@ -1,5 +1,31 @@
 <script setup>
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, nextTick, watch, defineAsyncComponent } from 'vue'
+
+import { knowledgeStore, demoContext, PROJECTS, ROLES } from '../data/knowledgeAiMock.js'
+import { organizeKnowledge } from '../data/knowledgeAiPresentation.js'
+const MockAnswer = defineAsyncComponent(() => import('./knowledge/MockAnswer.vue'))
+const MaterialDetail = defineAsyncComponent(() => import('./knowledge/MaterialDetail.vue'))
+const citation = ref(null)
+let citationScrollTop = 0
+function openCitation(group) { citationScrollTop = chatBodyRef.value?.scrollTop || 0; citation.value = group }
+function restoreCitationPosition() { nextTick(() => { if (chatBodyRef.value) chatBodyRef.value.scrollTop = citationScrollTop }) }
+let pendingAnswerId = null
+function revealAnswer(id) {
+  if (pendingAnswerId !== id) return
+  pendingAnswerId = null
+  nextTick(() => {
+    const container = chatBodyRef.value, answer = container?.querySelector(`[data-message-id="${id}"]`)
+    if (answer) container.scrollTop += answer.getBoundingClientRect().top - container.getBoundingClientRect().top - 12
+  })
+}
+const mode = ref('mock')
+const lastMockQuestion = ref('')
+watch([mode, selectedContextProject, () => demoContext.role], resetConversation)
+function selectedContextProject() { return demoContext.project }
+function resetConversation() {
+  lastMockQuestion.value = ''; deepHistory.value = []
+  messages.value = [{ id: nextId(), role: 'ai', text: mode.value === 'mock' ? 'Mock知识增强问答：请选专业和项目后提问，仅引用已发布、可检索且有权限的当前版本。' : 'DeepSeek通用AI模式：需真实服务，不使用本轮Mock知识检索，不提供知识库引用。' }]
+}
 
 // 密钥已移至服务端代理（server/index.js），前端只调用同源 /api 接口，避免密钥暴露。
 const DEEPSEEK_MODEL = 'deepseek-chat'
@@ -67,7 +93,7 @@ const WELCOME_HTML = `<div class="sec-h1">🤖 AI智能体 · 南京市浦口人
 请在<strong>右侧选择医疗专项系统</strong>设定对话上下文，或直接输入您的问题开始对话。`
 
 const messages = ref([
-  { id: nextId(), role: 'ai', html: WELCOME_HTML }
+  { id: nextId(), role: 'ai', text: 'Mock知识增强问答：请选择专业系统及项目后提问。仅检索已发布、可检索、有访问权限的当前有效版本。原有种子为模拟发布状态。' }
 ])
 
 // 智能滚动：仅当用户本就停留在底部附近时才跟随滚动到底，避免滚轮被强制拉回底部。
@@ -133,6 +159,8 @@ function buildDeepMessages(userMsg) {
 }
 
 function setSystem(sys) {
+  if (sending.value) return
+  resetConversation()
   if (selectedSystem.value === sys) {
     selectedSystem.value = ''
     deepSystemContext.value = ''
@@ -140,7 +168,7 @@ function setSystem(sys) {
   }
   selectedSystem.value = sys
   deepSystemContext.value = DEEP_SYSTEM_CONTEXTS[sys] || ''
-  messages.value.push({ id: nextId(), role: 'system', text: `📌 已切换到：${sys}系统 — AI将基于该领域专业知识回答` })
+  messages.value.push({ id: nextId(), role: 'system', text: `📌 已切换到：${sys}系统 — 将按当前模式和项目上下文回答` })
   scrollDeepChat()
 }
 
@@ -252,6 +280,23 @@ async function sendDeepMsg() {
   messages.value.push({ id: nextId(), role: 'user', text: q })
   inputText.value = ''
 
+  if (mode.value === 'mock') {
+    const followup = /^(继续|还有|上述|上面|这个|该资料|它|再详细)/.test(q) && lastMockQuestion.value
+    const retrievalQuestion = followup ? lastMockQuestion.value + ' ' + q : q
+    const sources = knowledgeStore.search(retrievalQuestion, selectedSystem.value, demoContext.project, demoContext.role, 60)
+    const ruleResult = knowledgeStore.runRules(retrievalQuestion, { domain: selectedSystem.value, project: demoContext.project, role: demoContext.role, measurementText: q })
+    const devices = knowledgeStore.effectiveKnowledge(demoContext.project,demoContext.role,selectedSystem.value).map(v => v.device)
+    const knowledge = organizeKnowledge(retrievalQuestion, [...sources,...ruleResult.knowledge], knowledgeStore.versionOf, [...devices,...ruleResult.configs.map(v=>v.device)])
+    lastMockQuestion.value = retrievalQuestion
+    const answerId = nextId()
+    pendingAnswerId = answerId
+    messages.value.push({ id: answerId, role: 'ai', mock: true, sources, ruleResult, knowledge,
+      text: knowledge.direct.length ? `找到 ${knowledge.direct.length} 份直接相关资料，可支持以下核查方向；尚不能据此确认实际故障。` : '暂无有效知识依据可直接支持当前设备的判断。请核实设备名称、具体异常及实测值；相关资料仅供参考。',
+      context: (demoContext.project ? '项目' + demoContext.project : '无项目上下文') + ' · ' + (selectedSystem.value || '全部专业') + (followup ? ' · 接续上一问题' : '')
+    })
+    return
+  }
+
   const aiMsg = reactive({ id: nextId(), role: 'deep-ai', streaming: true, html: '' })
   messages.value.push(aiMsg)
   sending.value = true
@@ -292,18 +337,29 @@ async function sendDeepMsg() {
     <div class="ai-chat-card">
       <div class="ai-chat-header">
         <span class="ai-chat-header-left">AI智能体 · 后勤运维专家</span>
-        <span class="deep-agent-badge">DeepSeek 驱动</span>
+        <span class="deep-agent-badge">{{ mode === 'mock' ? 'Mock知识增强问答' : 'DeepSeek · 通用AI' }}</span>
       </div>
 
+      <div class="knowledge-context">
+        <el-select v-model="mode" aria-label="问答模式" :disabled="sending" style="width:220px"><el-option value="mock" label="Mock知识增强问答（默认）" /><el-option value="deepseek" label="DeepSeek通用AI（真实服务）" /></el-select>
+        <el-select v-model="demoContext.project" aria-label="问答项目" placeholder="无项目上下文" :disabled="sending" style="width:180px"><el-option value="" label="无项目上下文" /><el-option v-for="p in PROJECTS" :key="p.id" :value="p.id" :label="p.name" /></el-select>
+        <el-select v-model="demoContext.role" aria-label="问答访问角色" :disabled="sending" style="width:170px"><el-option v-for="r in ROLES" :key="r" :value="r" /></el-select>
+        <p>{{ mode === 'mock' ? 'Mock演示 · 请描述设备与异常；有读数时填写“指标名称 实测数值 单位”。' : 'DeepSeek真实服务模式，不使用本地知识库引用。' }} <el-popover placement="bottom" width="340" trigger="click"><template #reference><el-button link type="primary">演示说明</el-button></template>Mock模式不调用AI接口；只读访客仅访问平台通用资料。演示阈值未经安全标准验证。{{ knowledgeStore.storageState.message }}</el-popover></p>
+        <el-alert v-if="mode === 'mock' && knowledgeStore.storageState.error" :title="knowledgeStore.storageState.error" type="error" :closable="false" />
+      </div>
       <div class="ai-chat-body" ref="chatBodyRef">
         <template v-for="m in messages" :key="m.id">
           <div v-if="m.role === 'system'" style="text-align:center;margin:8px 0;">
             <span class="ctx-chip">{{ m.text }}</span>
           </div>
-          <div v-else class="ai-msg" :class="m.role">
+          <div v-else class="ai-msg" :class="m.role" :data-message-id="m.id">
             <div class="ai-msg-avatar" :class="m.role">{{ m.role === 'user' ? 'U' : 'AI' }}</div>
             <div class="ai-msg-bubble">
               <template v-if="m.role === 'user'">{{ m.text }}</template>
+              <MockAnswer v-else-if="m.mock" :message="m" @open-source="openCitation" @ready="revealAnswer(m.id)"/>
+              <template v-else-if="m.text">
+                <p>{{ m.text }}</p>
+              </template>
               <template v-else-if="m.streaming && !m.html">
                 <div class="deep-thinking">
                   <div class="d-dot"></div><div class="d-dot"></div><div class="d-dot"></div>
@@ -323,7 +379,7 @@ async function sendDeepMsg() {
           placeholder="输入设备故障现象或运维问题…"
           @keydown.enter.prevent="onEnter"
         >
-        <button type="button" @click="sendDeepMsg" title="发送">
+        <button type="button" :disabled="sending" @click="sendDeepMsg" title="发送">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
@@ -351,5 +407,16 @@ async function sendDeepMsg() {
         <button v-for="item in QUICK" :key="item.label" class="ai-quick-item" @click="quickAsk(item.q)">{{ item.icon }} {{ item.label }}</button>
       </div>
     </div>
+    <MaterialDetail :id="citation?.documentId || ''" :version="citation?.version" :fragments="citation?.fragments || []" @close="citation=null" @closed="restoreCitationPosition"/>
   </div>
 </template>
+
+<style scoped>
+.knowledge-context { padding:12px 16px; display:flex; flex-wrap:wrap; gap:8px; border-bottom:1px solid var(--ez-border); flex-shrink:0; }
+.knowledge-context p { width:100%; margin:0; color:var(--ez-text-secondary); font-size:12px; }
+.deep-agent-page > * { min-width:0; }
+.ai-msg-bubble { min-width:0; overflow-wrap:anywhere; }.ai-msg-bubble h4 { margin:16px 0 8px; }
+.answer-excerpts { padding-left:20px; }.answer-excerpts li { margin-bottom:8px; }
+.knowledge-source { margin:12px 0; padding:12px; border:1px solid var(--ez-border); border-radius:var(--ez-control-radius); }
+.source-link { white-space:normal; height:auto; text-align:left; }.knowledge-source small { display:block; color:var(--ez-text-secondary); }.knowledge-source blockquote { margin:8px 0 0; }
+</style>
