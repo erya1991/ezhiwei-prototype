@@ -69,6 +69,48 @@ const routes = [
     meta: { title: '设备健康与预测性维护AI中心' }
   },
   {
+    path: '/equipment/categories',
+    name: 'equipment-categories',
+    component: () => import('../views/equipment/EquipmentCategoriesView.vue'),
+    meta: { title: '设备分类管理' }
+  },
+  {
+    path: '/equipment/ledger',
+    name: 'equipment-ledger',
+    component: () => import('../views/equipment/EquipmentLedgerView.vue'),
+    meta: { title: '设备台账' }
+  },
+  {
+    path: '/equipment/spaces',
+    name: 'equipment-spaces',
+    component: () => import('../views/equipment/EquipmentSpacesView.vue'),
+    meta: { title: '院区空间与建筑档案' }
+  },
+  {
+    path: '/inspection/rules',
+    name: 'inspection-rules',
+    component: () => import('../views/inspection/InspectionRulesView.vue'),
+    meta: { title: '巡检规则' }
+  },
+  {
+    path: '/inspection/plans',
+    name: 'inspection-plans',
+    component: () => import('../views/inspection/InspectionPlansView.vue'),
+    meta: { title: '巡检计划与路线' }
+  },
+  {
+    path: '/inspection/tasks',
+    name: 'inspection-tasks',
+    component: () => import('../views/inspection/InspectionTasksView.vue'),
+    meta: { title: '巡检任务' }
+  },
+  {
+    path: '/inspection/records',
+    name: 'inspection-records',
+    component: () => import('../views/inspection/InspectionRecordsView.vue'),
+    meta: { title: '巡检记录' }
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('../views/SettingsView.vue'),
