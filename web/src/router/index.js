@@ -18,13 +18,31 @@ const routes = [
     path: '/knowledge',
     name: 'knowledge',
     component: () => import('../views/KnowledgeBaseView.vue'),
-    meta: { title: '专家知识库' }
+    meta: { title: '知识资料管理' }
+  },
+  {
+    path: '/knowledge-processing',
+    name: 'knowledge-processing',
+    component: () => import('../views/KnowledgeProcessingView.vue'),
+    meta: { title: '知识加工与治理' }
+  },
+  {
+    path: '/threshold-rules',
+    name: 'threshold-rules',
+    component: () => import('../views/ThresholdRulesView.vue'),
+    meta: { title: '规则与阈值知识库' }
+  },
+  {
+    path: '/reasoning-rules',
+    name: 'reasoning-rules',
+    component: () => import('../views/ReasoningRulesView.vue'),
+    meta: { title: '推理规则配置' }
   },
   {
     path: '/ai-agent',
     name: 'ai-agent',
     component: () => import('../views/AiChatView.vue'),
-    meta: { title: 'AI智能体' }
+    meta: { title: '智能问答' }
   },
   {
     path: '/work-order',
