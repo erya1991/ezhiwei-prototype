@@ -5,6 +5,7 @@ import {
   SUBJECT_LIST, SUBJECT_TYPES, GAS_SYSTEMS, NODE_LIST,
   countNodesBySubject, countPersonsBySubject
 } from '../../data/responsibility'
+import { usePager } from '../../composables/usePager'
 
 const keyword = ref('')
 const filterType = ref('')
@@ -123,6 +124,8 @@ function openDetail(row) {
 const detailNodes = computed(() =>
   detailRow.value ? NODE_LIST.filter((n) => n.subjectId === detailRow.value.id) : []
 )
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -142,7 +145,8 @@ const detailNodes = computed(() =>
       <el-button type="primary" @click="openCreate">+ 新增责任主体</el-button>
     </div>
 
-    <el-table :data="tableData" stripe border style="width: 100%">
+    <el-table :data="pagedRows" stripe border style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="主体编号" width="140" />
       <el-table-column prop="name" label="主体名称" min-width="240" show-overflow-tooltip>
         <template #default="{ row }">
@@ -198,6 +202,17 @@ const detailNodes = computed(() =>
         <el-empty description="没有匹配的责任主体" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <!-- 新增 / 编辑 -->
     <el-dialog
@@ -374,5 +389,30 @@ const detailNodes = computed(() =>
   font-size: 13px;
   font-weight: 600;
   color: var(--ez-text);
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>

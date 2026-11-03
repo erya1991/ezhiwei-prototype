@@ -5,6 +5,7 @@ import {
   ROLE_LIST, ROLE_TYPES, DATA_SCOPES,
   PERMISSION_MODULES, PERMISSION_ACTIONS
 } from '../../data/orgPersonnel'
+import { usePager } from '../../composables/usePager'
 
 // 角色 → 关联人员数（Mock，实际应由人员-角色关联表统计）
 const ROLE_MEMBER_COUNT = {
@@ -166,6 +167,8 @@ const scopeDesc = {
   本组织: '仅可查看本组织的数据',
   本人: '仅可查看与本人相关的数据'
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -204,7 +207,8 @@ const scopeDesc = {
       <el-button type="primary" @click="openCreate">+ 新增角色</el-button>
     </div>
 
-    <el-table :data="tableData" stripe border style="width: 100%">
+    <el-table :data="pagedRows" stripe border style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="角色编号" width="100" />
       <el-table-column prop="name" label="角色名称" min-width="150">
         <template #default="{ row }">
@@ -253,6 +257,17 @@ const scopeDesc = {
         <el-empty description="没有匹配的角色" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <div class="table-foot">共 {{ tableData.length }} 个角色</div>
 
@@ -514,4 +529,29 @@ const scopeDesc = {
   flex-wrap: wrap;
 }
 .perm-tag { min-width: 40px; justify-content: center; }
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
+}
 </style>

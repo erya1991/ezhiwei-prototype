@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   SYSTEM_LIST, SYSTEM_CATEGORIES, SYSTEM_LEVELS, GAS_SYSTEMS, systemStatus
 } from '../../data/responsibility'
+import { usePager } from '../../composables/usePager'
 
 // ---- 筛选 ----
 const keyword = ref('')
@@ -137,6 +138,8 @@ const levelTagType = {
   项目级: 'primary',
   班组级: 'info'
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -229,7 +232,8 @@ const levelTagType = {
           <span class="toolbar-count">{{ tableData.length }} 项</span>
         </div>
 
-        <el-table :data="tableData" stripe border style="width: 100%">
+        <el-table :data="pagedRows" stripe border style="width: 100%">
+          <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
           <el-table-column prop="id" label="制度编号" width="140" />
           <el-table-column prop="name" label="制度名称" min-width="230" show-overflow-tooltip>
             <template #default="{ row }">
@@ -263,6 +267,17 @@ const levelTagType = {
             <el-empty description="没有匹配的制度" :image-size="80" />
           </template>
         </el-table>
+
+        <div v-if="total" class="table-pager">
+          <el-pagination
+            v-model:current-page="page"
+            v-model:page-size="size"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="total"
+            layout="total, sizes, prev, pager, next, jumper"
+            background
+          />
+        </div>
       </section>
     </div>
 
@@ -711,5 +726,30 @@ const levelTagType = {
 .content-row {
   flex: 1 0 auto;
   min-height: 300px;
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>
