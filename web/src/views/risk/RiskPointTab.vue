@@ -3,8 +3,11 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   RISK_POINT_LIST, RISK_POINT_TYPES, GAS_SYSTEMS, PERSON_LIST,
-  hazardsOfPoint, maxLevelOfPoint, auditStatusOfPoint, pointOf
+  hazardsOfPoint, maxLevelOfPoint, auditStatusOfPoint, pointOf,
+  HAZARD_LIST, ACCIDENT_TYPES, L_OPTIONS, E_OPTIONS, C_OPTIONS,
+  calcD, riskLevelOf
 } from '../../data/risk'
+import { usePager } from '../../composables/usePager'
 
 const keyword = ref('')
 const filterType = ref('')
@@ -52,7 +55,8 @@ function emptyForm() {
   return {
     id: '', name: '', type: '医用气体', facility: '', location: '',
     system: '中心供氧系统', area: '', subjectId: 'ZT-EPC-0001',
-    ownerName: '', ownerId: '', status: '启用', createDate: ''
+    ownerName: '', ownerId: '', status: '启用', createDate: '',
+    hazards: []
   }
 }
 
@@ -75,8 +79,106 @@ function openCreate() {
 
 function openEdit(row) {
   dialogMode.value = 'edit'
-  form.value = { ...row }
+  form.value = {
+    ...row,
+    hazards: hazardsOfPoint(row.id).map((h) => ({
+      ...h,
+      accidents: [...(h.accidents || [])]
+    }))
+  }
   dialogVisible.value = true
+}
+
+/* ===== 危险源与 LEC 评估子表 ===== */
+function newHazard() {
+  return {
+    id: '', seq: 0, desc: '', accidents: [], trigger: '', facility: '', existing: '',
+    L: 3, E: 6, C: 7, method: 'LEC', assessDate: '', assessor: '',
+    auditStatus: '草稿', status: '启用'
+  }
+}
+
+function addHazard() {
+  form.value.hazards.push(newHazard())
+}
+
+function removeHazard(i) {
+  form.value.hazards.splice(i, 1)
+}
+
+/** D = L × E × C，实时计算 */
+function dOf(h) {
+  return calcD(Number(h.L) || 0, Number(h.E) || 0, Number(h.C) || 0)
+}
+
+function levelOfH(h) {
+  return riskLevelOf(dOf(h))
+}
+
+function hzLevelText(h) {
+  const lv = levelOfH(h)
+  return `${lv.level} 级 · ${lv.name}`
+}
+
+function hzLevelStyle(h) {
+  const lv = levelOfH(h)
+  return { color: lv.color, background: `${lv.color}1f`, borderColor: `${lv.color}66` }
+}
+
+/**
+ * 危险源编号前缀：沿用该点已有危险源的前缀（WX-{点位序号}-），
+ * 新点则取「风险点顺序号」与「现有最大序号 + 1」中的较大值，避免撞号。
+ */
+function wxPrefix(pointId) {
+  const existing = HAZARD_LIST.find((h) => h.pointId === pointId)
+  if (existing) return `${existing.id.slice(0, 8)}-`
+  const idx = RISK_POINT_LIST.findIndex((p) => p.id === pointId) + 1
+  const maxIdx = HAZARD_LIST.reduce((m, h) => Math.max(m, Number(h.id.slice(3, 7)) || 0), 0)
+  const no = Math.max(idx, maxIdx + 1)
+  return `WX-${String(no).padStart(4, '0')}-`
+}
+
+/** 把表单里的危险源列表同步进 HAZARD_LIST（新增生成编号、已有就地更新、移除的删除） */
+function syncHazards(pointId, rows) {
+  const pre = wxPrefix(pointId)
+  const keepIds = new Set(rows.filter((r) => r.id).map((r) => r.id))
+
+  for (let i = HAZARD_LIST.length - 1; i >= 0; i--) {
+    const h = HAZARD_LIST[i]
+    if (h.pointId === pointId && !keepIds.has(h.id)) HAZARD_LIST.splice(i, 1)
+  }
+
+  let maxSeq = HAZARD_LIST
+    .filter((h) => h.pointId === pointId)
+    .reduce((m, h) => Math.max(m, Number(h.seq) || 0), 0)
+
+  rows.forEach((r) => {
+    const d = dOf(r)
+    const lv = riskLevelOf(d)
+    const payload = {
+      ...r,
+      pointId,
+      accidents: [...(r.accidents || [])],
+      L: Number(r.L),
+      E: Number(r.E),
+      C: Number(r.C),
+      D: d,
+      level: lv.level,
+      levelName: lv.name,
+      colorName: lv.colorName,
+      color: lv.color,
+      controlLevel: lv.controlLevel
+    }
+    if (r.id) {
+      const idx = HAZARD_LIST.findIndex((h) => h.id === r.id)
+      if (idx > -1) HAZARD_LIST.splice(idx, 1, { ...HAZARD_LIST[idx], ...payload })
+    } else {
+      maxSeq += 1
+      payload.id = pre + String(maxSeq).padStart(3, '0')
+      payload.seq = maxSeq
+      HAZARD_LIST.push(payload)
+    }
+  })
 }
 
 function onOwnerChange(pid) {
@@ -88,20 +190,26 @@ async function submitForm() {
   if (!formRef.value) return
   await formRef.value.validate((valid) => {
     if (!valid) return
+    const blank = form.value.hazards.findIndex((h) => !String(h.desc || '').trim())
+    if (blank > -1) {
+      ElMessage.warning(`第 ${blank + 1} 条危险源缺少描述，请补充或移除`)
+      return
+    }
+    const { hazards, ...pointData } = form.value
     if (dialogMode.value === 'create') {
       const prefix = `FX-${TYPE_CODE[form.value.type] || 'OTH'}-`
       const maxNo = RISK_POINT_LIST
         .filter((p) => p.id.startsWith(prefix))
         .reduce((m, p) => Math.max(m, Number(p.id.slice(-4)) || 0), 0)
-      RISK_POINT_LIST.push({
-        ...form.value,
-        id: prefix + String(maxNo + 1).padStart(4, '0')
-      })
-      ElMessage.success('风险点已新增（原型演示，刷新后还原）')
+      const newId = prefix + String(maxNo + 1).padStart(4, '0')
+      RISK_POINT_LIST.push({ ...pointData, id: newId })
+      syncHazards(newId, hazards)
+      ElMessage.success(`风险点已新增，同步 ${hazards.length} 条危险源（原型演示，刷新后还原）`)
     } else {
       const idx = RISK_POINT_LIST.findIndex((p) => p.id === form.value.id)
-      if (idx > -1) RISK_POINT_LIST.splice(idx, 1, { ...form.value })
-      ElMessage.success('风险点已更新（原型演示，刷新后还原）')
+      if (idx > -1) RISK_POINT_LIST.splice(idx, 1, { ...pointData })
+      syncHazards(form.value.id, hazards)
+      ElMessage.success(`风险点已更新，同步 ${hazards.length} 条危险源（原型演示，刷新后还原）`)
     }
     dialogVisible.value = false
   })
@@ -132,6 +240,8 @@ function openDetail(row) {
 const detailHazards = computed(() =>
   detailRow.value ? hazardsOfPoint(detailRow.value.id) : []
 )
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -156,7 +266,8 @@ const detailHazards = computed(() =>
       <el-button type="primary" @click="openCreate">+ 新增风险点</el-button>
     </div>
 
-    <el-table :data="tableData" stripe border size="small" style="width: 100%">
+    <el-table :data="pagedRows" stripe border size="small" style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="风险点编号" width="120" />
       <el-table-column prop="name" label="风险点名称" min-width="150" show-overflow-tooltip>
         <template #default="{ row }">
@@ -205,13 +316,24 @@ const detailHazards = computed(() =>
       </template>
     </el-table>
 
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
+
     <!-- 新增 / 编辑 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogMode === 'create' ? '新增风险点' : '编辑风险点'"
-      width="700px"
+      width="880px"
       destroy-on-close
-      top="7vh"
+      top="6vh"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="140px">
         <el-row :gutter="16">
@@ -275,8 +397,108 @@ const detailHazards = computed(() =>
             </el-form-item>
           </el-col>
         </el-row>
+
+        <!-- 危险源与 LEC 评估 -->
+        <div class="hz-section">
+          <div class="hz-section-head">
+            <span class="hz-section-title">危险源与 LEC 评估</span>
+            <span class="hz-section-hint">{{ form.hazards.length }} 项</span>
+            <el-button link type="primary" size="small" class="hz-add" @click="addHazard">
+              + 添加危险源
+            </el-button>
+          </div>
+
+          <div v-if="!form.hazards.length" class="hz-empty">
+            尚未录入危险源。可先保存风险点，稍后在此补充，或在「危险源与 LEC 评估」页签中批量维护。
+          </div>
+
+          <div v-for="(h, i) in form.hazards" :key="i" class="hz-item">
+            <div class="hz-item-top">
+              <span class="hz-seq">{{ i + 1 }}</span>
+              <el-input
+                v-model="h.desc"
+                maxlength="200"
+                placeholder="危险源描述，如「液氧储罐超压导致罐体破裂」"
+              />
+              <el-button link type="danger" @click="removeHazard(i)">移除</el-button>
+            </div>
+
+            <div class="hz-field">
+              <span class="hz-label">可能事故类型</span>
+              <el-select
+                v-model="h.accidents"
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                placeholder="可多选，如「爆炸」「泄漏」"
+                style="width: 100%"
+              >
+                <el-option v-for="a in ACCIDENT_TYPES" :key="a" :label="a" :value="a" />
+              </el-select>
+            </div>
+
+            <div class="hz-lec">
+              <div class="hz-field">
+                <span class="hz-label compact">L</span>
+                <el-select v-model="h.L" placeholder="可能性" style="width: 100%">
+                  <el-option v-for="o in L_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+                </el-select>
+              </div>
+              <div class="hz-field">
+                <span class="hz-label compact">E</span>
+                <el-select v-model="h.E" placeholder="暴露频率" style="width: 100%">
+                  <el-option v-for="o in E_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+                </el-select>
+              </div>
+              <div class="hz-field">
+                <span class="hz-label compact">C</span>
+                <el-select v-model="h.C" placeholder="后果" style="width: 100%">
+                  <el-option v-for="o in C_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+                </el-select>
+              </div>
+            </div>
+
+            <div class="hz-item-result">
+              <span class="hz-d">D = L × E × C = {{ dOf(h) }}</span>
+              <span class="hz-lv" :style="hzLevelStyle(h)">{{ hzLevelText(h) }}</span>
+            </div>
+
+            <el-collapse class="hz-more">
+              <el-collapse-item title="触发条件 / 关联设备设施 / 现有管控措施">
+                <div class="hz-more-item">
+                  <span class="hz-label">触发条件</span>
+                  <el-input
+                    v-model="h.trigger"
+                    type="textarea"
+                    :rows="2"
+                    placeholder="如：安全阀卡涩、压力表失真、充装过量、罐体超期未检"
+                  />
+                </div>
+                <div class="hz-more-item">
+                  <span class="hz-label">关联设备设施</span>
+                  <el-input
+                    v-model="h.facility"
+                    type="textarea"
+                    :rows="2"
+                    placeholder="如：液氧储罐、安全阀、压力表"
+                  />
+                </div>
+                <div class="hz-more-item">
+                  <span class="hz-label">现有管控措施</span>
+                  <el-input
+                    v-model="h.existing"
+                    type="textarea"
+                    :rows="2"
+                    placeholder="如：每日两次巡检记录罐压与液位；安全阀每半年校验"
+                  />
+                </div>
+              </el-collapse-item>
+            </el-collapse>
+          </div>
+        </div>
+
         <div class="form-tip">
-          编号按「FX-{类型代码}-{4位流水}」自动生成；危险源数量与最高风险等级由危险源子表实时统计，不可手工填写。
+          风险点编号按「FX-{类型代码}-{4位流水}」自动生成，危险源编号按「WX-{点位后4位}-{3位流水}」自动生成；D 值与风险等级由 L×E×C 实时计算，不可手工填写。
         </div>
       </el-form>
       <template #footer>
@@ -392,6 +614,69 @@ const detailHazards = computed(() =>
   line-height: 1.6;
 }
 
+/* ===== 危险源与 LEC 评估子表 ===== */
+.hz-section {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--ez-border);
+}
+.hz-section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.hz-section-title { font-size: 13px; font-weight: 600; color: var(--ez-text); }
+.hz-section-hint { font-size: 12px; color: var(--ez-text-muted); }
+.hz-add { margin-left: auto; }
+.hz-empty {
+  font-size: 12px;
+  color: var(--ez-text-muted);
+  line-height: 1.7;
+  padding: 10px 12px;
+  background: var(--ez-fill-light);
+  border-radius: 6px;
+}
+.hz-item {
+  border: 1px solid var(--ez-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.7);
+}
+.hz-item-top { display: flex; align-items: center; gap: 8px; }
+.hz-seq {
+  flex: none;
+  width: 18px; height: 18px; line-height: 18px;
+  text-align: center; font-size: 11px; border-radius: 50%;
+  background: var(--ez-fill-light); color: var(--ez-text-secondary);
+}
+/* 字段行：标签在左，控件撑满剩余宽度 */
+.hz-field { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.hz-label {
+  flex: none;
+  width: 84px;
+  font-size: 12px;
+  color: var(--ez-text-secondary);
+  text-align: right;
+  line-height: 1.5;
+}
+.hz-label.compact { width: 16px; text-align: center; }
+.hz-field > :deep(.el-select) { flex: 1; min-width: 0; }
+/* L / E / C 三列等宽 */
+.hz-lec { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.hz-item-result { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.hz-d { font-size: 12px; color: var(--ez-text-secondary); font-variant-numeric: tabular-nums; }
+.hz-lv {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+.hz-more { margin-top: 8px; }
+.hz-more :deep(.el-collapse-item__header) { font-size: 12px; color: var(--ez-text-muted); height: 30px; }
+.hz-more :deep(.el-collapse-item__content) { padding-bottom: 4px; }
+/* 折叠区三个字段各占一行 */
+.hz-more-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.hz-more-item .hz-label { padding-top: 7px; }
+.hz-more-item > :deep(.el-textarea) { flex: 1; min-width: 0; }
+
 .detail-title { font-size: 17px; font-weight: 600; color: var(--ez-text); line-height: 1.5; }
 .detail-sub { display: flex; align-items: center; gap: 8px; margin: 8px 0 16px; }
 .detail-code { font-size: 12px; color: var(--ez-text-muted); }
@@ -400,5 +685,30 @@ const detailHazards = computed(() =>
   font-size: 13px;
   font-weight: 600;
   color: var(--ez-text);
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>

@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { FACTOR_LIST, FACTOR_CATEGORIES, GAS_SYSTEMS } from '../../data/risk'
-
+import { usePager } from '../../composables/usePager'
 const keyword = ref('')
 const activeCategory = ref('')
 const filterEnabled = ref('')
@@ -86,6 +86,8 @@ function toggleEnabled(row) {
     ElMessage.success(`已${row.enabled === '启用' ? '停用' : '启用'}（原型演示，刷新后还原）`)
   }
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -128,7 +130,8 @@ function toggleEnabled(row) {
       <el-button type="primary" @click="openCreate">+ 新增因素</el-button>
     </div>
 
-    <el-table :data="tableData" stripe border size="small" style="width: 100%">
+    <el-table :data="pagedRows" stripe border size="small" style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="因素编号" width="115" />
       <el-table-column prop="name" label="因素名称" min-width="150" />
       <el-table-column label="因素分类" width="110" align="center">
@@ -172,6 +175,17 @@ function toggleEnabled(row) {
         <el-empty description="没有匹配的危害因素" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" title="新增危害因素" width="620px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
@@ -290,4 +304,29 @@ function toggleEnabled(row) {
 .tag-row { display: flex; gap: 3px; flex-wrap: wrap; }
 .ref-count { font-weight: 600; color: var(--ez-primary); font-variant-numeric: tabular-nums; }
 .muted { font-size: 12px; color: var(--ez-text-muted); }
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
+}
 </style>

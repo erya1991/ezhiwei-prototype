@@ -6,6 +6,7 @@ import {
   ACCIDENT_TYPES, CONTROL_LEVELS, AUDIT_STATUS, RISK_LEVELS,
   pointOf, measuresOfHazard
 } from '../../data/risk'
+import { usePager } from '../../composables/usePager'
 
 const keyword = ref('')
 const filterType = ref('')
@@ -76,8 +77,9 @@ const tableData = computed(() => {
 /** 风险点列合并单元格（仅分组模式下生效） */
 function spanMethod({ row, column, rowIndex, columnIndex }) {
   if (!groupByPoint.value) return { rowspan: 1, colspan: 1 }
-  if (columnIndex > 4) return { rowspan: 1, colspan: 1 }
-  const data = tableData.value
+  if (columnIndex === 0) return { rowspan: 1, colspan: 1 }
+  if (columnIndex > 5) return { rowspan: 1, colspan: 1 }
+  const data = pagedRows.value
   const prev = data[rowIndex - 1]
   if (prev && prev.pointId === row.pointId) return { rowspan: 0, colspan: 0 }
   let count = 1
@@ -120,6 +122,8 @@ const detailMeasures = computed(() =>
 function exportCatalog() {
   ElMessage.success(`已生成风险目录清单（${tableData.value.length} 条），原型阶段不实际导出文件`)
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -201,13 +205,14 @@ function exportCatalog() {
     <!-- 目录表 -->
     <div class="table-card">
       <el-table
-        :data="tableData"
+        :data="pagedRows"
         border
         size="small"
         :span-method="spanMethod"
         style="width: 100%"
         :row-class-name="({ row }) => (row.level >= 4 ? 'row-high' : '')"
       >
+        <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
         <el-table-column label="序号" width="55" align="center">
           <template #default="{ $index }">{{ $index + 1 }}</template>
         </el-table-column>
@@ -284,6 +289,17 @@ function exportCatalog() {
           <el-empty description="没有匹配的风险目录数据" :image-size="80" />
         </template>
       </el-table>
+
+      <div v-if="total" class="table-pager">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="size"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+        />
+      </div>
     </div>
 
     <!-- 详情 -->
@@ -491,5 +507,30 @@ function exportCatalog() {
 .table-card {
   flex: 1 0 auto;
   min-height: 300px;
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>

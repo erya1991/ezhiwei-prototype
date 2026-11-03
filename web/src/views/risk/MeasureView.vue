@@ -1,16 +1,16 @@
 <script setup>
-import { ref, computed, shallowRef } from 'vue'
+import { ref, computed } from 'vue'
 import MeasureListTab from './MeasureListTab.vue'
-import MeasureLinkTab from './MeasureLinkTab.vue'
-import { MEASURE_LIST, MEASURE_LINKS } from '../../data/risk'
+import { MEASURE_LIST, MEASURE_LINKS, HAZARD_LIST } from '../../data/risk'
 
-const activeTab = ref('measure')
-const tabs = shallowRef([
-  { name: 'measure', label: '管控措施清单', comp: MeasureListTab },
-  { name: 'link', label: '措施与危险源关联', comp: MeasureLinkTab }
-])
+/** 子表改动后触发统计重算 */
+const tick = ref(0)
+function onChanged() {
+  tick.value += 1
+}
 
 const stats = computed(() => {
+  tick.value
   const done = MEASURE_LIST.filter((m) => m.status === '已完成').length
   const doing = MEASURE_LIST.filter((m) => m.status === '进行中').length
   // 与措施清单口径一致：未完成且已过计划完成时间即视为逾期
@@ -20,6 +20,8 @@ const stats = computed(() => {
     (m) => m.status !== '已完成' && m.planDate && m.planDate < ts
   ).length
   const valid = MEASURE_LIST.filter((m) => m.validity === '有效').length
+  const covered = HAZARD_LIST.filter((h) => MEASURE_LINKS.some((l) => l.hazardId === h.id)).length
+  const rate = HAZARD_LIST.length ? Math.round((covered / HAZARD_LIST.length) * 100) : 0
   return [
     { key: 'total', label: '措施总数', value: MEASURE_LIST.length, unit: '条', tone: 'primary' },
     { key: 'done', label: '已完成', value: done, unit: '条', tone: 'success' },
@@ -29,7 +31,12 @@ const stats = computed(() => {
       tone: overdue > 0 ? 'danger' : 'success',
       hint: overdue > 0 ? '逾期措施须重新排期并追责' : ''
     },
-    { key: 'valid', label: '有效性已验证', value: valid, unit: '条', tone: 'primary' }
+    { key: 'valid', label: '有效性已验证', value: valid, unit: '条', tone: 'primary' },
+    {
+      key: 'cover', label: '危险源措施覆盖率', value: rate, unit: '%',
+      tone: rate < 100 ? 'danger' : 'success',
+      hint: rate < 100 ? `仍有 ${HAZARD_LIST.length - covered} 个危险源未制定措施` : ''
+    }
   ]
 })
 </script>
@@ -40,7 +47,7 @@ const stats = computed(() => {
       <div>
         <h1 class="page-title">风险管控措施制定</h1>
         <p class="page-desc">
-          针对每个危险源制定工程技术、管理、培训教育、个体防护、应急处置五类措施，明确管控层级、责任人与验收标准。措施与危险源是多对多关联，一条措施可覆盖多个危险源。
+          针对每个危险源制定工程技术、管理、培训教育、个体防护、应急处置五类措施，明确管控层级、责任人与验收标准。新增或编辑措施时直接勾选要覆盖的危险源，可按风险点快速定位；一条措施可覆盖多个危险源。
         </p>
       </div>
     </div>
@@ -54,11 +61,7 @@ const stats = computed(() => {
     </div>
 
     <div class="tab-card">
-      <el-tabs v-model="activeTab">
-        <el-tab-pane v-for="t in tabs" :key="t.name" :label="t.label" :name="t.name">
-          <component :is="t.comp" />
-        </el-tab-pane>
-      </el-tabs>
+      <MeasureListTab @changed="onChanged" />
     </div>
   </div>
 </template>
@@ -94,7 +97,7 @@ const stats = computed(() => {
 
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }

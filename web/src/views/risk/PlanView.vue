@@ -6,7 +6,7 @@ import {
   ACCIDENT_TYPES
 } from '../../data/risk'
 import { POSITION_LIST } from '../../data/orgPersonnel'
-
+import { usePager } from '../../composables/usePager'
 const keyword = ref('')
 const filterCategory = ref('')
 const filterStatus = ref('')
@@ -186,6 +186,8 @@ const pointNames = (ids) =>
 function mockUpload() {
   ElMessage.info('原型阶段演示：实际环境支持上传 PDF / Word，单文件不超过 20MB')
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -244,7 +246,8 @@ function mockUpload() {
         <el-button type="primary" @click="openCreate">+ 新增预案</el-button>
       </div>
 
-      <el-table :data="tableData" stripe border size="small" style="width: 100%">
+      <el-table :data="pagedRows" stripe border size="small" style="width: 100%">
+        <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
         <el-table-column prop="id" label="预案编号" width="118" />
         <el-table-column prop="name" label="预案名称" min-width="230" show-overflow-tooltip>
           <template #default="{ row }">
@@ -314,6 +317,17 @@ function mockUpload() {
           <el-empty description="没有匹配的应急预案" :image-size="80" />
         </template>
       </el-table>
+
+      <div v-if="total" class="table-pager">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="size"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+        />
+      </div>
     </div>
 
     <!-- 弹窗 -->
@@ -686,5 +700,30 @@ function mockUpload() {
 .tab-card {
   flex: 1 0 auto;
   min-height: 300px;
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>

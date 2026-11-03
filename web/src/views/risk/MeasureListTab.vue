@@ -3,10 +3,13 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   MEASURE_LIST, MEASURE_CATEGORIES, CONTROL_LEVELS, MEASURE_STATUS,
-  VALIDITY_STATUS, measuresOfHazard, linksOfMeasure, HAZARD_LIST
+  VALIDITY_STATUS, measuresOfHazard, linksOfMeasure, HAZARD_LIST,
+  RISK_POINT_LIST, MEASURE_LINKS, linkCountOf
 } from '../../data/risk'
 import { POSITION_LIST, PERSON_LIST } from '../../data/orgPersonnel'
+import { usePager } from '../../composables/usePager'
 
+const emit = defineEmits(['changed'])
 const keyword = ref('')
 const filterCategory = ref('')
 const filterControl = ref('')
@@ -71,7 +74,8 @@ function emptyForm() {
     id: '', name: '', category: '工程技术', desc: '', require: '', accept: '',
     controlLevel: '岗位级', owner: '', position: '', planDate: '',
     status: '未开始', validity: '未验证', verifyDate: '', verifier: '',
-    fromLib: '否'
+    fromLib: '否',
+    pointId: '', hazardIds: [], linkType: '主要措施'
   }
 }
 
@@ -104,8 +108,75 @@ function openCreate() {
 
 function openEdit(row) {
   dialogMode.value = 'edit'
-  form.value = { ...row }
+  const links = linksOfMeasure(row.id)
+  form.value = {
+    ...row,
+    pointId: '',
+    linkType: links[0] ? links[0].linkType : '主要措施',
+    hazardIds: links.map((l) => l.hazardId)
+  }
   dialogVisible.value = true
+}
+
+/* ===== 关联危险源 ===== */
+/** 候选危险源：选定风险点后只列该点下的危险源，未选则列全部 */
+const hazardOptions = computed(() => {
+  const list = form.value.pointId
+    ? HAZARD_LIST.filter((h) => h.pointId === form.value.pointId)
+    : HAZARD_LIST
+  return list
+})
+
+/** 风险点下拉选项：附带该点下危险源数量，便于判断 */
+const pointOptions = computed(() =>
+  RISK_POINT_LIST.map((p) => ({
+    id: p.id,
+    name: p.name,
+    count: HAZARD_LIST.filter((h) => h.pointId === p.id).length
+  }))
+)
+
+/** 切换风险点时，剔除已选但不属于该点的危险源 */
+function onPointChange() {
+  if (!form.value.pointId) return
+  form.value.hazardIds = form.value.hazardIds.filter((id) => {
+    const h = HAZARD_LIST.find((x) => x.id === id)
+    return h && h.pointId === form.value.pointId
+  })
+}
+
+function nextLinkId() {
+  const max = MEASURE_LINKS.reduce((m, l) => Math.max(m, Number(l.id.slice(3)) || 0), 0)
+  return 'GL-' + String(max + 1).padStart(8, '0')
+}
+
+/** 把表单勾选的危险源同步为关联记录 */
+function syncLinks(measureId, hazardIds, linkType) {
+  const keep = new Set(hazardIds)
+  for (let i = MEASURE_LINKS.length - 1; i >= 0; i--) {
+    const l = MEASURE_LINKS[i]
+    if (l.measureId === measureId && !keep.has(l.hazardId)) MEASURE_LINKS.splice(i, 1)
+  }
+  hazardIds.forEach((hid) => {
+    const exist = MEASURE_LINKS.find((l) => l.measureId === measureId && l.hazardId === hid)
+    if (exist) {
+      exist.linkType = linkType
+    } else {
+      MEASURE_LINKS.push({
+        id: nextLinkId(),
+        hazardId: hid,
+        measureId,
+        linkType,
+        isDone: '未开始',
+        doneDate: ''
+      })
+    }
+  })
+  const m = MEASURE_LIST.find((x) => x.id === measureId)
+  if (m) {
+    m.linkCount = MEASURE_LINKS.filter((l) => l.measureId === measureId).length
+    m.hazardCount = m.linkCount
+  }
 }
 
 function onOwnerChange(name) {
@@ -117,23 +188,26 @@ async function submitForm() {
   if (!formRef.value) return
   await formRef.value.validate((valid) => {
     if (!valid) return
+    const { pointId, hazardIds, linkType, ...measureData } = form.value
     if (dialogMode.value === 'create') {
       const code = CAT_CODE[form.value.category] || 'QT'
       const prefix = `CS-${code}-`
       const maxNo = MEASURE_LIST
         .filter((m) => m.id.startsWith(prefix))
         .reduce((mx, m) => Math.max(mx, Number(m.id.slice(-4)) || 0), 0)
-      MEASURE_LIST.push({
-        ...form.value,
-        id: prefix + String(maxNo + 1).padStart(4, '0'),
-        hazardCount: 0
-      })
-      ElMessage.success('管控措施已新增（原型演示，刷新后还原）')
+      const newId = prefix + String(maxNo + 1).padStart(4, '0')
+      MEASURE_LIST.push({ ...measureData, id: newId, hazardCount: hazardIds.length })
+      syncLinks(newId, hazardIds, linkType)
+      ElMessage.success(`管控措施已新增，关联 ${hazardIds.length} 个危险源（原型演示，刷新后还原）`)
     } else {
       const idx = MEASURE_LIST.findIndex((m) => m.id === form.value.id)
-      if (idx > -1) MEASURE_LIST.splice(idx, 1, { ...form.value })
-      ElMessage.success('管控措施已更新（原型演示，刷新后还原）')
+      if (idx > -1) {
+        MEASURE_LIST.splice(idx, 1, { ...measureData, hazardCount: hazardIds.length })
+      }
+      syncLinks(form.value.id, hazardIds, linkType)
+      ElMessage.success(`管控措施已更新，关联 ${hazardIds.length} 个危险源（原型演示，刷新后还原）`)
     }
+    emit('changed')
     dialogVisible.value = false
   })
 }
@@ -236,6 +310,8 @@ const detailHazards = computed(() => {
     hazard: HAZARD_LIST.find((h) => h.id === l.hazardId)
   }))
 })
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -259,7 +335,8 @@ const detailHazards = computed(() => {
       <el-button type="primary" @click="openCreate">+ 新增措施</el-button>
     </div>
 
-    <el-table :data="tableData" stripe border size="small" style="width: 100%">
+    <el-table :data="pagedRows" stripe border size="small" style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="措施编号" width="118" />
       <el-table-column prop="name" label="措施名称" min-width="210" show-overflow-tooltip>
         <template #default="{ row }">
@@ -290,7 +367,7 @@ const detailHazards = computed(() => {
       </el-table-column>
       <el-table-column label="关联危险源" width="100" align="center">
         <template #default="{ row }">
-          <span class="link-count" :class="{ zero: !row.hazardCount }">{{ row.hazardCount || 0 }}</span>
+          <span class="link-count" :class="{ zero: !linkCountOf(row.id) }">{{ linkCountOf(row.id) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="230" fixed="right">
@@ -319,6 +396,17 @@ const detailHazards = computed(() => {
         <el-empty description="没有匹配的管控措施" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <!-- 弹窗 -->
     <el-dialog
@@ -429,6 +517,80 @@ const detailHazards = computed(() => {
             </el-form-item>
           </el-col>
         </el-row>
+
+        <!-- 关联危险源 -->
+        <div class="link-section">
+          <div class="link-section-head">
+            <span class="link-section-title">关联危险源</span>
+            <span class="link-section-hint">已选 {{ form.hazardIds.length }} 个</span>
+          </div>
+
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="风险点" label-width="110px">
+                <el-select
+                  v-model="form.pointId"
+                  clearable
+                  filterable
+                  placeholder="选择风险点以快速筛选危险源"
+                  style="width: 100%"
+                  @change="onPointChange"
+                >
+                  <el-option
+                    v-for="p in pointOptions"
+                    :key="p.id"
+                    :label="`${p.name}（${p.count} 个危险源）`"
+                    :value="p.id"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="关联类型" label-width="90px">
+                <el-radio-group v-model="form.linkType">
+                  <el-radio value="主要措施">主要措施</el-radio>
+                  <el-radio value="辅助措施">辅助措施</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+            <el-col :span="24">
+              <el-form-item label="危险源" label-width="110px">
+                <el-select
+                  v-model="form.hazardIds"
+                  multiple
+                  filterable
+                  collapse-tags
+                  collapse-tags-tooltip
+                  :max-collapse-tags="3"
+                  placeholder="可多选，输入关键字搜索危险源描述"
+                  style="width: 100%"
+                >
+                  <el-option
+                    v-for="h in hazardOptions"
+                    :key="h.id"
+                    :label="`${h.id}｜${h.desc}`"
+                    :value="h.id"
+                  >
+                    <span class="hz-opt">
+                      <span class="hz-opt-id">{{ h.id }}</span>
+                      <span class="hz-opt-desc">{{ h.desc }}</span>
+                      <span class="hz-opt-lv" :style="{ color: h.color }">{{ h.level }} 级</span>
+                    </span>
+                  </el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <div v-if="form.hazardIds.length" class="link-picked">
+            <span v-for="id in form.hazardIds" :key="id" class="link-picked-item">
+              {{ id }}
+            </span>
+          </div>
+          <div v-else class="link-empty">
+            未关联危险源的措施无法计入覆盖率，建议至少选择一个危险源。
+          </div>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -550,6 +712,37 @@ const detailHazards = computed(() => {
 .link-count { font-weight: 700; color: var(--ez-primary); font-variant-numeric: tabular-nums; }
 .link-count.zero { color: var(--ez-danger); }
 
+/* ===== 关联危险源区块 ===== */
+.link-section {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--ez-border);
+}
+.link-section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.link-section-title { font-size: 13px; font-weight: 600; color: var(--ez-text); }
+.link-section-hint { font-size: 12px; color: var(--ez-text-muted); }
+.link-picked { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px 110px; }
+.link-picked-item {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  color: var(--ez-primary);
+  background: var(--ez-primary-bg);
+  font-variant-numeric: tabular-nums;
+}
+.link-empty {
+  margin-left: 110px;
+  font-size: 12px;
+  color: var(--ez-text-muted);
+  padding: 8px 12px;
+  background: var(--ez-fill-light);
+  border-radius: 6px;
+}
+.hz-opt { display: flex; align-items: center; gap: 8px; }
+.hz-opt-id { font-size: 11px; color: var(--ez-text-muted); font-variant-numeric: tabular-nums; }
+.hz-opt-desc { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hz-opt-lv { font-size: 11px; font-weight: 600; }
+
 .detail-title { font-size: 15px; font-weight: 600; color: var(--ez-text); line-height: 1.6; }
 .detail-sub { display: flex; align-items: center; gap: 8px; margin: 8px 0 16px; flex-wrap: wrap; }
 .detail-code { font-size: 12px; color: var(--ez-text-muted); }
@@ -570,4 +763,29 @@ const detailHazards = computed(() => {
   font-weight: 600;
 }
 .level-pill i { width: 5px; height: 5px; border-radius: 50%; }
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
+}
 </style>

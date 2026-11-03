@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { AUDIT_LIST, HAZARD_LIST, hazardOf, riskLevelOf } from '../../data/risk'
-
+import { usePager } from '../../composables/usePager'
 const keyword = ref('')
 const filterFlow = ref('')
 
@@ -107,6 +107,8 @@ function openDetail(row) {
 const detailHazard = computed(() =>
   detailRow.value ? hazardOf(detailRow.value.hazardId) : null
 )
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -150,7 +152,8 @@ const detailHazard = computed(() =>
       <span class="toolbar-count">{{ tableData.length }} 条</span>
     </div>
 
-    <el-table :data="tableData" stripe border size="small" style="width: 100%">
+    <el-table :data="pagedRows" stripe border size="small" style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="审核编号" width="120" />
       <el-table-column prop="hazardId" label="危险源" width="115" />
       <el-table-column prop="hazardDesc" label="危险源描述" min-width="230" show-overflow-tooltip>
@@ -199,6 +202,17 @@ const detailHazard = computed(() =>
         <el-empty description="没有匹配的审核记录" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <!-- 审核弹窗 -->
     <el-dialog
@@ -376,5 +390,30 @@ const detailHazard = computed(() =>
   background: rgba(16, 124, 16, 0.08);
   border-left: 3px solid var(--ez-success);
   color: var(--ez-success);
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>
