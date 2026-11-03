@@ -5,6 +5,7 @@ import {
   ACCEPT_LIST, HAZARD_LIST, ACCEPT_CONCLUSIONS, AFTER_LEVELS,
   gradeOf, hazardOf, todayStr, appendHistory
 } from '../../data/hazard'
+import { usePager } from '../../composables/usePager'
 
 const keyword = ref('')
 const filterConclusion = ref('')
@@ -161,6 +162,8 @@ function quickAccept(row) {
     openDetail(row)
   }
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -186,7 +189,8 @@ function quickAccept(row) {
       </div>
     </div>
 
-    <el-table :data="tableData" stripe border size="small" style="width: 100%">
+    <el-table :data="pagedRows" stripe border size="small" style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="验收编号" width="140" />
       <el-table-column prop="hazardId" label="关联隐患" width="135" />
       <el-table-column prop="hazardDesc" label="隐患描述" min-width="220" show-overflow-tooltip>
@@ -233,6 +237,17 @@ function quickAccept(row) {
         <el-empty description="没有匹配的验收记录" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <!-- 详情 -->
     <el-drawer v-model="drawerVisible" title="验收名片" size="680px">
@@ -437,5 +452,30 @@ function quickAccept(row) {
   background: rgba(255, 149, 0, 0.1);
   border-left: 3px solid var(--ez-warning);
   color: var(--ez-warning-text);
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>

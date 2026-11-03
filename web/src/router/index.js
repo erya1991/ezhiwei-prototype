@@ -97,8 +97,14 @@ const routes = [
   {
     path: '/hazard/report',
     name: 'hazard-report',
-    component: () => import('../views/hazard/ReportView.vue'),
+    component: () => import('../views/hazard/ReportEntryView.vue'),
     meta: { title: 'AI随手拍' }
+  },
+  {
+    path: '/hazard/report/manual',
+    name: 'hazard-report-manual',
+    component: () => import('../views/hazard/ReportView.vue'),
+    meta: { title: '手动上报' }
   },
   {
     path: '/hazard/overview',

@@ -5,12 +5,13 @@ import {
   INSPECT_LIST, INSPECT_TYPES, INSPECT_OBJECT_TYPES, HAZARD_LEVELS,
   gradeOf, hazardOf
 } from '../../data/hazard'
+import { usePager } from '../../composables/usePager'
 
 const keyword = ref('')
 const filterType = ref('')
 const filterObjectType = ref('')
 const filterInspector = ref('')
-const viewMode = ref('card')
+const viewMode = ref('list')
 
 const inspectors = computed(() => [...new Set(INSPECT_LIST.map((i) => i.inspector))])
 
@@ -94,6 +95,8 @@ function submitForm() {
   ElMessage.success('排查名片已创建（原型演示，刷新后还原）')
   dialogVisible.value = false
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -110,10 +113,18 @@ function submitForm() {
         <el-select v-model="filterInspector" placeholder="排查人" clearable style="width: 110px">
           <el-option v-for="i in inspectors" :key="i" :label="i" :value="i" />
         </el-select>
-        <el-radio-group v-model="viewMode" size="small">
-          <el-radio-button value="card">名片</el-radio-button>
-          <el-radio-button value="table">列表</el-radio-button>
-        </el-radio-group>
+        <div class="view-switch">
+          <el-button
+            size="small"
+            :type="viewMode === 'card' ? 'primary' : 'default'"
+            @click="viewMode = 'card'"
+          >名片</el-button>
+          <el-button
+            size="small"
+            :type="viewMode === 'list' ? 'primary' : 'default'"
+            @click="viewMode = 'list'"
+          >列表</el-button>
+        </div>
       </div>
       <div class="right-ops">
         <span class="count-text">{{ tableData.length }} 次排查 · 发现 {{ totalFound }} 条隐患</span>
@@ -169,7 +180,8 @@ function submitForm() {
     </div>
 
     <!-- 列表视图 -->
-    <el-table v-else :data="tableData" stripe border size="small" style="width: 100%">
+    <el-table v-else :data="pagedRows" stripe border size="small" style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="排查编号" width="140" />
       <el-table-column prop="type" label="排查类型" width="100" align="center">
         <template #default="{ row }">
@@ -177,8 +189,8 @@ function submitForm() {
         </template>
       </el-table-column>
       <el-table-column prop="objectType" label="对象类型" width="95" align="center" />
-      <el-table-column prop="objectName" label="排查对象" width="130" />
-      <el-table-column prop="location" label="位置" width="160" show-overflow-tooltip />
+      <el-table-column prop="objectName" label="排查对象" min-width="130" />
+      <el-table-column prop="location" label="位置" min-width="160" show-overflow-tooltip />
       <el-table-column prop="inspector" label="排查人" width="85" />
       <el-table-column prop="inspectTime" label="排查时间" width="135" sortable />
       <el-table-column prop="itemCount" label="排查项" width="75" align="center" />
@@ -204,7 +216,7 @@ function submitForm() {
         </template>
       </el-table-column>
       <el-table-column prop="conclusion" label="排查结论" width="105" />
-      <el-table-column label="操作" width="80" fixed="right">
+      <el-table-column label="操作" width="90" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="openDetail(row)">详情</el-button>
         </template>
@@ -213,6 +225,17 @@ function submitForm() {
         <el-empty description="没有匹配的排查名片" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <!-- 详情 -->
     <el-drawer v-model="drawerVisible" title="排查名片" size="700px">
@@ -342,6 +365,9 @@ function submitForm() {
 }
 .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .right-ops { display: flex; align-items: center; gap: 12px; }
+.view-switch { display: inline-flex; align-items: center; }
+.view-switch :deep(.el-button) { margin-left: 0; }
+.view-switch :deep(.el-button + .el-button) { margin-left: -1px; }
 .count-text { font-size: 12px; color: var(--ez-text-muted); }
 
 .card-grid {
@@ -435,5 +461,30 @@ function submitForm() {
   background: var(--ez-fill-light);
   border-radius: 4px;
   color: var(--ez-text-secondary);
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>

@@ -43,10 +43,13 @@ export const DISPATCH_TARGET_TYPES = ['责任人', '岗位', '班组', '责任�
 export const DISPATCH_STATUS = ['待接收', '已接收', '已退回', '派单失败']
 
 /** 排查类型 */
-export const INSPECT_TYPES = ['日常排查', '专项排查', '节前排查', '季节性排查', '事故后排查']
+export const INSPECT_TYPES = ['日常排查', '专项排查', '节前排查', '季节性排查', '事故后排查', '投诉核实']
 
 /** 排查对象类型 */
-export const INSPECT_OBJECT_TYPES = ['风险点', '设备设施', '场所区域']
+export const INSPECT_OBJECT_TYPES = ['设备', '建筑', '设施', '空间']
+
+/** 隐患来源类型 */
+export const ORIGIN_TYPES = ['AI随手拍', '巡检排查', '外部检查', '投诉']
 
 /** 验收结论 */
 export const ACCEPT_CONCLUSIONS = ['合格', '不合格', '部分合格']
@@ -328,7 +331,7 @@ export const HAZARD_LIST = [
     location: '室外 制氧站配电间', building: '室外', system: '其他',
     typeId: 'LX-JD-0006', typeName: '电气线路隐患', level: '重大',
     status: '待验收', reporter: '孙建军', reportTime: '2026-10-18 09:30',
-    method: '手工上报', source: '小程序', submitStatus: '已提交',
+    method: 'AI识别', source: '小程序', submitStatus: '已提交',
     photos: ['电缆破损.jpg'],
     clue: '维修电工', subjectName: '医智维运维公司医用气体项目部', ownerName: '孙建军',
     dispatchStatus: '已接收', workOrderNo: 'GD-20261018-0002', deadline: '2026-10-19',
@@ -407,6 +410,7 @@ export const HAZARD_LIST = [
     id: 'YH-20261012-0001', desc: '地下车库 B2 层氧气瓶暂存区未设置防倾倒链条',
     location: '地下车库 B2 层', building: '地下车库', system: '特殊气体汇流排',
     typeId: 'LX-QT-0002', typeName: '人员未持证', level: '较大',
+    originType: '外部检查', originNo: 'JC-20261011-0001', originUnit: '浦口区应急管理局',
     status: '已关闭', reporter: '黄立新', reportTime: '2026-10-12 09:15',
     method: '手工上报', source: '小程序', submitStatus: '已提交',
     photos: ['暂存区.jpg'],
@@ -422,6 +426,7 @@ export const HAZARD_LIST = [
     id: 'YH-20261011-0001', desc: '住院楼 6F 走廊有异味，疑似气体泄漏',
     location: '住院楼 6F 走廊', building: '住院楼', system: '其他',
     typeId: 'LX-HJ-0001', typeName: '现场脏乱', level: '一般',
+    originType: '投诉', originNo: 'TS-20261011-0001', originUnit: '住院楼 6F 患者家属',
     status: '已驳回', reporter: '钱晓燕', reportTime: '2026-10-11 11:30',
     method: '手工上报', source: '小程序', submitStatus: '已提交',
     photos: [],
@@ -514,7 +519,7 @@ export function latestDispatch(hazardId) {
 
 export const INSPECT_LIST = [
   {
-    id: 'PC-20261101-0001', type: '日常排查', objectType: '风险点', objectId: 'FX-QT-0001',
+    id: 'PC-20261101-0001', type: '日常排查', objectType: '设施', objectId: 'FX-QT-0001',
     objectName: '液氧储罐', location: '室外 液氧站',
     inspector: '刘志刚', inspectTime: '2026-11-01 08:30',
     itemCount: 12, foundCount: 1, maxLevel: '重大', conclusion: '发现隐患',
@@ -522,7 +527,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261031-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261101-0002', type: '日常排查', objectType: '风险点', objectId: 'FX-QT-0004',
+    id: 'PC-20261101-0002', type: '日常排查', objectType: '设备', objectId: 'FX-QT-0004',
     objectName: '终端设备带', location: '住院楼 3F 东侧走廊',
     inspector: '钱晓燕', inspectTime: '2026-11-01 09:00',
     itemCount: 8, foundCount: 1, maxLevel: '重大', conclusion: '发现隐患',
@@ -530,7 +535,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261101-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261031-0001', type: '专项排查', objectType: '风险点', objectId: 'FX-JD-0002',
+    id: 'PC-20261031-0001', type: '专项排查', objectType: '设备', objectId: 'FX-JD-0002',
     objectName: '真空吸引机组', location: '感染楼 4F 护士站',
     inspector: '周文斌', inspectTime: '2026-10-31 16:20',
     itemCount: 10, foundCount: 1, maxLevel: '较大', conclusion: '发现隐患',
@@ -538,7 +543,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261031-0002'], status: '已提交', remark: '感染楼专项'
   },
   {
-    id: 'PC-20261030-0001', type: '节前排查', objectType: '场所区域', objectId: 'AREA-0001',
+    id: 'PC-20261030-0001', type: '节前排查', objectType: '空间', objectId: 'AREA-0001',
     objectName: '地下车库',
     location: '地下车库 B1-B2', inspector: '徐鹏飞', inspectTime: '2026-10-30 14:00',
     itemCount: 15, foundCount: 1, maxLevel: '重大', conclusion: '发现隐患',
@@ -546,7 +551,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261101-0002'], status: '已提交', remark: '节前安全检查'
   },
   {
-    id: 'PC-20261028-0001', type: '日常排查', objectType: '设备设施', objectId: 'EQ-0001',
+    id: 'PC-20261028-0001', type: '日常排查', objectType: '设备', objectId: 'EQ-0001',
     objectName: '制氧机组 2#',
     location: '室外 制氧站', inspector: '孙建军', inspectTime: '2026-10-28 11:00',
     itemCount: 9, foundCount: 1, maxLevel: '一般', conclusion: '发现隐患',
@@ -554,7 +559,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261028-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261027-0001', type: '日常排查', objectType: '风险点', objectId: 'FX-QT-0004',
+    id: 'PC-20261027-0001', type: '日常排查', objectType: '设备', objectId: 'FX-QT-0004',
     objectName: '终端设备带', location: '医技楼 1F CT 室',
     inspector: '马晓峰', inspectTime: '2026-10-27 09:30',
     itemCount: 8, foundCount: 1, maxLevel: '较大', conclusion: '发现隐患',
@@ -562,7 +567,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261027-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261026-0001', type: '专项排查', objectType: '风险点', objectId: 'FX-QT-0003',
+    id: 'PC-20261026-0001', type: '专项排查', objectType: '设施', objectId: 'FX-QT-0003',
     objectName: '中心供氧输送管道', location: '住院楼 地下 1F 管廊',
     inspector: '周文斌', inspectTime: '2026-10-26 15:00',
     itemCount: 14, foundCount: 1, maxLevel: '重大', conclusion: '发现隐患',
@@ -570,7 +575,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261026-0001'], status: '已提交', remark: '管廊专项'
   },
   {
-    id: 'PC-20261024-0001', type: '日常排查', objectType: '设备设施', objectId: 'EQ-0002',
+    id: 'PC-20261024-0001', type: '日常排查', objectType: '设施', objectId: 'EQ-0002',
     objectName: '牙科空压机储气罐',
     location: '医技楼 2F 洗消中心', inspector: '沈立国', inspectTime: '2026-10-24 09:50',
     itemCount: 7, foundCount: 1, maxLevel: '重大', conclusion: '发现隐患',
@@ -578,7 +583,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261024-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261023-0001', type: '日常排查', objectType: '风险点', objectId: 'FX-QT-0005',
+    id: 'PC-20261023-0001', type: '日常排查', objectType: '设施', objectId: 'FX-QT-0005',
     objectName: '牙科吸引系统', location: '门诊楼 4F 口腔科',
     inspector: '顾建华', inspectTime: '2026-10-23 13:40',
     itemCount: 6, foundCount: 1, maxLevel: '较大', conclusion: '发现隐患',
@@ -586,7 +591,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261023-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261022-0001', type: '季节性排查', objectType: '风险点', objectId: 'FX-QT-0001',
+    id: 'PC-20261022-0001', type: '季节性排查', objectType: '设施', objectId: 'FX-QT-0001',
     objectName: '液氧储罐', location: '室外 液氧站',
     inspector: '曹德明', inspectTime: '2026-10-22 09:20',
     itemCount: 12, foundCount: 1, maxLevel: '重大', conclusion: '发现隐患',
@@ -594,7 +599,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261022-0001'], status: '已提交', remark: '秋冬防火专项'
   },
   {
-    id: 'PC-20261021-0001', type: '日常排查', objectType: '风险点', objectId: 'FX-QT-0003',
+    id: 'PC-20261021-0001', type: '日常排查', objectType: '设施', objectId: 'FX-QT-0003',
     objectName: '中心供氧输送管道', location: '住院楼 8F 管道井',
     inspector: '张伟东', inspectTime: '2026-10-21 10:40',
     itemCount: 14, foundCount: 1, maxLevel: '一般', conclusion: '发现隐患',
@@ -602,7 +607,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261021-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261020-0001', type: '日常排查', objectType: '场所区域', objectId: 'AREA-0002',
+    id: 'PC-20261020-0001', type: '日常排查', objectType: '空间', objectId: 'AREA-0002',
     objectName: '门诊楼 1F 大厅',
     location: '门诊楼 1F', inspector: '何志远', inspectTime: '2026-10-20 08:30',
     itemCount: 10, foundCount: 1, maxLevel: '较大', conclusion: '发现隐患',
@@ -610,7 +615,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261020-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261019-0001', type: '日常排查', objectType: '风险点', objectId: 'FX-QT-0001',
+    id: 'PC-20261019-0001', type: '日常排查', objectType: '设施', objectId: 'FX-QT-0001',
     objectName: '液氧储罐', location: '室外 液氧站',
     inspector: '刘志刚', inspectTime: '2026-10-19 13:00',
     itemCount: 12, foundCount: 1, maxLevel: '重大', conclusion: '发现隐患',
@@ -618,7 +623,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261019-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261016-0001', type: '日常排查', objectType: '场所区域', objectId: 'AREA-0003',
+    id: 'PC-20261016-0001', type: '日常排查', objectType: '空间', objectId: 'AREA-0003',
     objectName: '医技楼 3F 走廊',
     location: '医技楼 3F', inspector: '徐鹏飞', inspectTime: '2026-10-16 20:00',
     itemCount: 8, foundCount: 1, maxLevel: '一般', conclusion: '发现隐患',
@@ -626,7 +631,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261016-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261015-0001', type: '日常排查', objectType: '风险点', objectId: 'FX-QT-0001',
+    id: 'PC-20261015-0001', type: '日常排查', objectType: '设施', objectId: 'FX-QT-0001',
     objectName: '液氧储罐', location: '室外 液氧站',
     inspector: '刘志刚', inspectTime: '2026-10-15 08:15',
     itemCount: 12, foundCount: 1, maxLevel: '一般', conclusion: '发现隐患',
@@ -634,7 +639,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261015-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261014-0001', type: '日常排查', objectType: '设备设施', objectId: 'EQ-0003',
+    id: 'PC-20261014-0001', type: '日常排查', objectType: '设备', objectId: 'EQ-0003',
     objectName: '中心吸引机组 1#',
     location: '室外 吸引机房', inspector: '赵明辉', inspectTime: '2026-10-14 09:40',
     itemCount: 9, foundCount: 1, maxLevel: '一般', conclusion: '发现隐患',
@@ -642,7 +647,7 @@ export const INSPECT_LIST = [
     hazards: ['YH-20261014-0001'], status: '已提交', remark: ''
   },
   {
-    id: 'PC-20261102-0001', type: '日常排查', objectType: '风险点', objectId: 'FX-QT-0002',
+    id: 'PC-20261102-0001', type: '日常排查', objectType: '设施', objectId: 'FX-QT-0002',
     objectName: '氧气汇流排', location: '住院楼 1F 汇流排间',
     inspector: '曹德明', inspectTime: '2026-11-02 08:00',
     itemCount: 11, foundCount: 0, maxLevel: '', conclusion: '正常',
@@ -650,12 +655,20 @@ export const INSPECT_LIST = [
     hazards: [], status: '已提交', remark: '各项正常'
   },
   {
-    id: 'PC-20261102-0002', type: '日常排查', objectType: '风险点', objectId: 'FX-JD-0001',
+    id: 'PC-20261102-0002', type: '日常排查', objectType: '设备', objectId: 'FX-JD-0001',
     objectName: '压缩空气机组', location: '室外 空压机房',
     inspector: '孙建军', inspectTime: '2026-11-02 09:15',
     itemCount: 10, foundCount: 0, maxLevel: '', conclusion: '正常',
     photos: [], qrCode: 'QR-FX-JD-0001',
     hazards: [], status: '草稿', remark: '待补充现场照片后提交'
+  },
+  {
+    id: 'PC-20261102-0003', type: '专项排查', objectType: '建筑', objectId: 'AREA-0004',
+    objectName: '门诊楼外墙及屋面', location: '门诊楼 外立面',
+    inspector: '黄立新', inspectTime: '2026-11-02 10:30',
+    itemCount: 9, foundCount: 0, maxLevel: '', conclusion: '正常',
+    photos: [], qrCode: 'QR-AREA-0004',
+    hazards: [], status: '已提交', remark: '外墙空鼓专项'
   }
 ]
 
@@ -828,4 +841,20 @@ export function historyOf(h) {
 /** 追加一条流程节点，返回新数组（不改原对象） */
 export function appendHistory(h, record) {
   return [...historyOf(h), record]
+}
+
+/** 隐患来源：显式标注优先，其次按排查记录反查，最后归为 AI随手拍 */
+export function originOf(hazard) {
+  if (!hazard) return { type: '', no: '', unit: '', method: '' }
+  if (hazard.originType) {
+    return {
+      type: hazard.originType,
+      no: hazard.originNo || '',
+      unit: hazard.originUnit || '',
+      method: ''
+    }
+  }
+  const pc = INSPECT_LIST.find((p) => (p.hazards || []).includes(hazard.id))
+  if (pc) return { type: '巡检排查', no: pc.id, unit: pc.inspector, method: '' }
+  return { type: 'AI随手拍', no: '', unit: hazard.reporter || '', method: hazard.method || '' }
 }

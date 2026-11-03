@@ -6,8 +6,45 @@ import {
   TYPE_LIST, gradeOf, remainDays, overdueDays, isOverdue,
   dispatchesOf, acceptsOf, inspectOfHazard, autoDeadline,
   ACCEPT_LIST, ACCEPT_CONCLUSIONS, AFTER_LEVELS,
-  historyOf, appendHistory, FLOW_NODE_STYLE
+  historyOf, appendHistory, FLOW_NODE_STYLE, originOf
 } from '../../data/hazard'
+import { usePager } from '../../composables/usePager'
+
+/* ===== 隐患来源展示 ===== */
+const ORIGIN_CLASS = {
+  AI随手拍: 'ai',
+  巡检排查: 'inspect',
+  外部检查: 'outer',
+  投诉: 'complaint'
+}
+const ORIGIN_DOC_NAME = {
+  巡检排查: '排查记录',
+  外部检查: '外部检查单',
+  投诉: '投诉单'
+}
+
+function originLabel(row) {
+  const o = originOf(row)
+  if (o.type === 'AI随手拍') return 'AI随手拍'
+  return o.type || '—'
+}
+
+function originClass(row) {
+  return ORIGIN_CLASS[originOf(row).type] || ''
+}
+
+/** AI随手拍无来源单，用上报方式占位；其余显示来源单号（暂为假蓝链） */
+function originSub(row) {
+  const o = originOf(row)
+  if (o.no) return o.no
+  return o.method || ''
+}
+
+function openOrigin(row) {
+  const o = originOf(row)
+  if (!o.no) return
+  ElMessage.info(`${ORIGIN_DOC_NAME[o.type] || '来源单'} ${o.no} 暂未接入跳转，后续版本支持`)
+}
 
 const keyword = ref('')
 const filterBuilding = ref('')
@@ -394,6 +431,8 @@ function resetFilters() {
   filterStatus.value = ''
   onlyOverdue.value = false
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -423,12 +462,13 @@ function resetFilters() {
     </div>
 
     <el-table
-      :data="tableData"
+      :data="pagedRows"
       border
       size="small"
       style="width: 100%"
       :row-class-name="({ row }) => (isOverdue(row) ? 'row-overdue' : '')"
     >
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="隐患编号" width="135" />
       <el-table-column prop="desc" label="隐患描述" min-width="250" show-overflow-tooltip>
         <template #default="{ row }">
@@ -447,6 +487,21 @@ function resetFilters() {
       <el-table-column label="状态" width="90" align="center">
         <template #default="{ row }">
           <el-tag :type="statusTag[row.status]" size="small" effect="light">{{ row.status }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="来源" width="150">
+        <template #default="{ row }">
+          <div class="origin-cell">
+            <span class="origin-tag" :class="originClass(row)">{{ originLabel(row) }}</span>
+            <el-link
+              v-if="originOf(row).no"
+              type="primary"
+              :underline="false"
+              class="origin-no"
+              @click="openOrigin(row)"
+            >{{ originSub(row) }}</el-link>
+            <span v-else class="origin-sub">{{ originSub(row) }}</span>
+          </div>
         </template>
       </el-table-column>
       <el-table-column prop="reporter" label="上报人" width="80" />
@@ -520,6 +575,17 @@ function resetFilters() {
         <el-empty description="没有匹配的隐患记录" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <!-- 受理弹窗 -->
     <el-dialog v-model="acceptDialog" title="受理隐患" width="620px" destroy-on-close>
@@ -697,6 +763,20 @@ function resetFilters() {
           <el-descriptions-item label="上报时间">{{ detailRow.reportTime }}</el-descriptions-item>
           <el-descriptions-item label="上报方式">{{ detailRow.method }}</el-descriptions-item>
           <el-descriptions-item label="上报来源">{{ detailRow.source }}</el-descriptions-item>
+          <el-descriptions-item label="隐患来源" :span="2">
+            <span class="origin-detail">
+              <span class="origin-tag" :class="originClass(detailRow)">{{ originLabel(detailRow) }}</span>
+              <el-link
+                v-if="originOf(detailRow).no"
+                type="primary"
+                :underline="false"
+                class="origin-no"
+                @click="openOrigin(detailRow)"
+              >{{ originOf(detailRow).no }}</el-link>
+              <span v-else class="origin-sub">{{ originSub(detailRow) }}</span>
+              <span v-if="originOf(detailRow).unit" class="origin-sub">· {{ originOf(detailRow).unit }}</span>
+            </span>
+          </el-descriptions-item>
           <el-descriptions-item label="责任主体">{{ detailRow.subjectName || '—' }}</el-descriptions-item>
           <el-descriptions-item label="责任人">{{ detailRow.ownerName || '—' }}</el-descriptions-item>
           <el-descriptions-item label="整改期限">{{ detailRow.deadline || '—' }}</el-descriptions-item>
@@ -875,6 +955,20 @@ function resetFilters() {
 .level-pill i { width: 5px; height: 5px; border-radius: 50%; flex: 0 0 5px; }
 
 .wo-link { font-size: 11px; color: var(--ez-primary); font-variant-numeric: tabular-nums; }
+/* ===== 来源列 ===== */
+.origin-cell { display: flex; flex-direction: column; gap: 2px; line-height: 1.35; }
+.origin-tag {
+  display: inline-block; align-self: flex-start;
+  font-size: 11px; padding: 0 5px; border-radius: 3px;
+  border: 1px solid transparent;
+}
+.origin-tag.ai { color: #1f6feb; background: rgba(31, 111, 235, 0.08); border-color: rgba(31, 111, 235, 0.22); }
+.origin-tag.inspect { color: #0d9488; background: rgba(13, 148, 136, 0.08); border-color: rgba(13, 148, 136, 0.22); }
+.origin-tag.outer { color: #d97706; background: rgba(217, 119, 6, 0.08); border-color: rgba(217, 119, 6, 0.22); }
+.origin-tag.complaint { color: #7c3aed; background: rgba(124, 58, 237, 0.08); border-color: rgba(124, 58, 237, 0.22); }
+.origin-no { font-size: 11px; font-variant-numeric: tabular-nums; }
+.origin-sub { font-size: 11px; color: var(--ez-text-muted); }
+.origin-detail { display: inline-flex; align-items: center; gap: 6px; }
 .muted { color: var(--ez-text-muted); font-size: 12px; }
 .remain-text { color: var(--ez-text-secondary); font-variant-numeric: tabular-nums; }
 .overdue-text { color: var(--ez-danger); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -936,5 +1030,30 @@ function resetFilters() {
   background: rgba(255, 149, 0, 0.1);
   border-left: 3px solid var(--ez-warning);
   color: var(--ez-warning-text);
+}
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 </style>

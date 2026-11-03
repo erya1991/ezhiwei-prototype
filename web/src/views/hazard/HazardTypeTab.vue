@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import {
   TYPE_LIST, TYPE_CATEGORIES, HAZARD_SYSTEMS, HAZARD_LEVELS, gradeOf, HAZARD_LIST
 } from '../../data/hazard'
+import { usePager } from '../../composables/usePager'
 
 const keyword = ref('')
 const activeCategory = ref('')
@@ -124,6 +125,8 @@ function toggleEnabled(row) {
     ElMessage.success(`已${row.enabled === '启用' ? '停用' : '启用'}（原型演示，刷新后还原）`)
   }
 }
+
+const { page, size, total, rows: pagedRows, indexMethod } = usePager(() => tableData)
 </script>
 
 <template>
@@ -160,7 +163,8 @@ function toggleEnabled(row) {
       <el-button type="primary" @click="openCreate">+ 新增类型</el-button>
     </div>
 
-    <el-table :data="tableData" stripe border size="small" style="width: 100%">
+    <el-table :data="pagedRows" stripe border size="small" style="width: 100%">
+      <el-table-column type="index" :index="indexMethod" label="序号" width="60" align="center" />
       <el-table-column prop="id" label="类型编号" width="115" />
       <el-table-column prop="name" label="类型名称" width="130" />
       <el-table-column label="类型分类" width="100" align="center">
@@ -222,6 +226,17 @@ function toggleEnabled(row) {
         <el-empty description="没有匹配的隐患类型" :image-size="80" />
       </template>
     </el-table>
+
+    <div v-if="total" class="table-pager">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
 
     <el-dialog
       v-model="dialogVisible"
@@ -388,4 +403,29 @@ function toggleEnabled(row) {
 .kw-box { width: 100%; }
 .kw-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; min-height: 22px; }
 .kw-input { display: flex; gap: 8px; }
+/* ===== 固定操作列不透明，避免横向滚动时下方列透出 ===== */
+:deep(.el-table .el-table-fixed-column--right),
+:deep(.el-table .el-table__fixed-right .el-table__cell) {
+  background-color: #fff !important;
+}
+:deep(.el-table th.el-table-fixed-column--right),
+:deep(.el-table__fixed-right .el-table__header .el-table__cell) {
+  background-color: var(--ez-fill-light) !important;
+}
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #f2f7ff !important;
+}
+
+/* ===== 统一分页栏 ===== */
+.table-pager {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  padding: 14px 4px 2px;
+}
+.table-pager :deep(.el-pagination) {
+  display: inline-flex;
+  vertical-align: middle;
+}
 </style>

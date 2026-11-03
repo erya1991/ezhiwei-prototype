@@ -79,18 +79,6 @@ function removePhoto(i) {
   form.value.photos.splice(i, 1)
 }
 
-// 最近上报
-const recent = computed(() =>
-  HAZARD_LIST.slice()
-    .sort((a, b) => (a.reportTime < b.reportTime ? 1 : -1))
-    .slice(0, 6)
-)
-
-const statusTag = {
-  待受理: 'warning', 待派单: 'warning', 整改中: 'primary',
-  待验收: 'primary', 已关闭: 'success', 已驳回: 'danger'
-}
-
 // 提交
 function submitForm() {
   if (!formRef.value) return
@@ -147,15 +135,24 @@ function resetForm() {
 function goOverview() {
   router.push('/hazard/overview')
 }
+
+function goEntry() {
+  router.push('/hazard/report')
+}
 </script>
 
 <template>
   <div class="page-wrap">
     <div class="page-head">
       <div>
-        <h1 class="page-title">AI随手拍 · 隐患上报</h1>
+        <div class="head-crumb">
+          <el-button link type="primary" size="small" @click="goEntry">← AI随手拍</el-button>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-cur">手动上报</span>
+        </div>
+        <h1 class="page-title">手动上报</h1>
         <p class="page-desc">
-          一期只做非 AI 人工上报，AI 拍照识别与识别结果人工核实本期未启用。小程序为主入口，PC 端同表单。提交后自动生成隐患编号并进入隐患台账「待受理」。
+          一期只做人工上报，AI 拍照识别与识别结果人工核实本期未启用。小程序为主入口，PC 端同表单。提交后自动生成隐患编号并进入隐患台账「待受理」。
         </p>
       </div>
       <el-button @click="goOverview">查看隐患总览</el-button>
@@ -225,13 +222,31 @@ function goOverview() {
           </el-row>
 
           <el-form-item label="隐患等级" prop="level">
-            <el-radio-group v-model="form.level">
-              <el-radio v-for="l in HAZARD_LEVELS" :key="l" :value="l">
-                <span class="level-radio">
-                  <i :style="{ background: gradeOf(l).color }"></i>{{ l }}
-                </span>
-              </el-radio>
-            </el-radio-group>
+            <div class="level-row">
+              <el-radio-group v-model="form.level">
+                <el-radio v-for="l in HAZARD_LEVELS" :key="l" :value="l">
+                  <span class="level-radio">
+                    <i :style="{ background: gradeOf(l).color }"></i>{{ l }}
+                  </span>
+                </el-radio>
+              </el-radio-group>
+              <span class="help-wrap">
+                <span class="help-icon">?</span>
+                <div class="help-panel">
+                  <div class="help-title">隐患等级判定标准</div>
+                  <div v-for="g in GRADE_STANDARDS" :key="g.level" class="help-grade">
+                    <div class="help-grade-head">
+                      <span class="help-dot" :style="{ background: g.color }"></span>
+                      <span class="help-name">{{ g.name }}</span>
+                      <span class="help-gongwei">{{ g.gongwei }}</span>
+                      <span class="help-days">{{ g.deadlineDays }} 天</span>
+                    </div>
+                    <div class="help-cond">{{ g.condition }}</div>
+                  </div>
+                  <div class="help-foot">按现场实际风险判定，受理人可在受理环节复核调整</div>
+                </div>
+              </span>
+            </div>
             <div class="field-hint">
               {{ levelGuide.condition }}
               <span class="deadline-hint">
@@ -288,38 +303,6 @@ function goOverview() {
         </el-form>
       </div>
 
-      <!-- 右侧辅助 -->
-      <div class="side-col">
-        <div class="side-card">
-          <div class="side-title">隐患等级判定</div>
-          <div v-for="g in GRADE_STANDARDS" :key="g.level" class="grade-item">
-            <div class="grade-head">
-              <span class="grade-dot" :style="{ background: g.color }"></span>
-              <span class="grade-name">{{ g.name }}</span>
-              <span class="grade-gongwei">{{ g.gongwei }}</span>
-              <span class="grade-days">{{ g.deadlineDays }} 天</span>
-            </div>
-            <div class="grade-cond">{{ g.condition }}</div>
-          </div>
-        </div>
-
-        <div class="side-card">
-          <div class="side-title">最近上报</div>
-          <div v-if="!recent.length" class="empty-text">暂无上报记录</div>
-          <div v-for="h in recent" :key="h.id" class="recent-item" @click="goOverview">
-            <div class="recent-top">
-              <span class="recent-level" :style="{
-                background: gradeOf(h.level).color + '1A',
-                color: gradeOf(h.level).color
-              }">{{ h.level }}</span>
-              <span class="recent-type">{{ h.typeName }}</span>
-              <el-tag :type="statusTag[h.status]" size="small" effect="light">{{ h.status }}</el-tag>
-            </div>
-            <div class="recent-desc">{{ h.desc }}</div>
-            <div class="recent-meta">{{ h.reporter }} · {{ h.reportTime }} · {{ h.building }}</div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -360,10 +343,7 @@ function goOverview() {
 }
 
 .layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 16px;
-  align-items: stretch;
+  display: block;
 }
 
 .form-card,
@@ -386,8 +366,86 @@ function goOverview() {
 .card-title { font-size: 14px; font-weight: 600; color: var(--ez-text); }
 .card-code { font-size: 11px; color: var(--ez-text-muted); font-variant-numeric: tabular-nums; }
 
+.head-crumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.crumb-sep { color: var(--ez-text-muted); }
+.crumb-cur { color: var(--ez-text-secondary); }
+
 .level-radio { display: inline-flex; align-items: center; gap: 5px; }
 .level-radio i { width: 8px; height: 8px; border-radius: 50%; }
+
+.level-row { display: flex; align-items: center; gap: 10px; }
+.help-wrap { position: relative; display: inline-flex; align-items: center; }
+.help-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--ez-border);
+  color: var(--ez-text-muted);
+  font-size: 11px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  transition: all 0.15s;
+}
+.help-wrap:hover .help-icon {
+  border-color: var(--ez-primary);
+  color: var(--ez-primary);
+}
+.help-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-30%);
+  width: 400px;
+  padding: 14px 16px 12px;
+  background: #fff;
+  border: 1px solid var(--ez-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 26px rgba(20, 40, 70, 0.14);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s, visibility 0.16s;
+  z-index: 30;
+  pointer-events: none;
+}
+.help-wrap:hover .help-panel { opacity: 1; visibility: visible; }
+.help-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ez-text);
+  margin-bottom: 10px;
+}
+.help-grade { margin-bottom: 9px; }
+.help-grade:last-of-type { margin-bottom: 0; }
+.help-grade-head { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.help-dot { width: 8px; height: 8px; border-radius: 2px; }
+.help-name { font-size: 12px; font-weight: 600; color: var(--ez-text); }
+.help-gongwei { font-size: 10px; color: var(--ez-text-muted); }
+.help-days {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ez-primary);
+  background: var(--ez-primary-bg);
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+.help-cond { font-size: 11px; color: var(--ez-text-secondary); line-height: 1.6; }
+.help-foot {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ez-border-light);
+  font-size: 10px;
+  color: var(--ez-text-muted);
+  line-height: 1.6;
+}
 
 .field-hint {
   flex: 1 1 100%;
@@ -421,60 +479,8 @@ function goOverview() {
   border-top: 1px solid var(--ez-border-light);
 }
 
-.side-col { display: flex; flex-direction: column; gap: 16px; }
-.side-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ez-text);
-  margin-bottom: 12px;
-}
-.grade-item { margin-bottom: 12px; }
-.grade-item:last-child { margin-bottom: 0; }
-.grade-head { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-.grade-dot { width: 8px; height: 8px; border-radius: 2px; }
-.grade-name { font-size: 12px; font-weight: 600; color: var(--ez-text); }
-.grade-gongwei { font-size: 10px; color: var(--ez-text-muted); }
-.grade-days {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--ez-primary);
-  background: var(--ez-primary-bg);
-  padding: 1px 6px;
-  border-radius: 8px;
-}
-.grade-cond { font-size: 11px; color: var(--ez-text-secondary); line-height: 1.6; }
 
-.recent-item {
-  padding: 8px 0;
-  border-bottom: 1px dashed var(--ez-border-light);
-  cursor: pointer;
-}
-.recent-item:last-child { border-bottom: none; }
-.recent-item:hover .recent-desc { color: var(--ez-primary); }
-.recent-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-.recent-level {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 8px;
-}
-.recent-type { font-size: 11px; color: var(--ez-text-secondary); }
-.recent-desc {
-  font-size: 12px;
-  color: var(--ez-text);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  transition: color 0.15s;
-}
-.recent-meta { font-size: 10px; color: var(--ez-text-muted); margin-top: 3px; }
-.empty-text { font-size: 12px; color: var(--ez-text-muted); }
 
-@media (max-width: 1200px) {
-  .layout { grid-template-columns: 1fr; }
-}
 /* ===== 页面骨架：主卡片撑满可视区 ===== */
 .page-head,
 .stat-row {
