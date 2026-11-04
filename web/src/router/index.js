@@ -29,8 +29,37 @@ const routes = [
   {
     path: '/work-order',
     name: 'work-order',
+    redirect: '/work-order/ledger'
+  },
+  {
+    path: '/work-order/ledger',
+    name: 'work-order-ledger',
     component: () => import('../views/WorkOrderView.vue'),
-    meta: { title: '工单处理' }
+    meta: { title: '工单台账' }
+  },
+  {
+    path: '/work-order/mine',
+    name: 'work-order-mine',
+    component: () => import('../views/work-order/MyOrdersView.vue'),
+    meta: { title: '我的工单' }
+  },
+  {
+    path: '/work-order/rules',
+    name: 'work-order-rules',
+    component: () => import('../views/work-order/WorkOrderRulesView.vue'),
+    meta: { title: '工单规则配置' }
+  },
+  {
+    path: '/work-order/mobile/ledger',
+    name: 'work-order-mobile-ledger',
+    component: () => import('../views/work-order/MobileOrdersView.vue'),
+    meta: { title: '移动工单台账', layout: 'work-order-mobile' }
+  },
+  {
+    path: '/work-order/mobile/mine',
+    name: 'work-order-mobile-mine',
+    component: () => import('../views/work-order/MobileOrdersView.vue'),
+    meta: { title: '移动我的工单', layout: 'work-order-mobile' }
   },
   {
     path: '/snapshot',

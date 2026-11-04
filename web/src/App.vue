@@ -8,10 +8,11 @@ import { useToast } from './composables/useToast'
 const { msg, isError, visible } = useToast()
 const route = useRoute()
 const isLogin = computed(() => route.name === 'login')
+const isWorkOrderMobile = computed(() => route.meta.layout === 'work-order-mobile')
 </script>
 
 <template>
-  <template v-if="!isLogin">
+  <template v-if="!isLogin && !isWorkOrderMobile">
     <Topbar />
     <Sidebar />
   </template>

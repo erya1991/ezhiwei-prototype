@@ -36,8 +36,9 @@ const items = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M9 2h6v4H9zM8 12l2 2 5-5M8 18h8"/></svg>'
   },
   {
-    path: '/work-order',
+    path: '/work-order/ledger',
     label: '工单处理',
+    children: [{ path: '/work-order/ledger', label: '工单台账' }, { path: '/work-order/mine', label: '我的工单' }, { path: '/work-order/rules', label: '工单规则配置' }],
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
   },
   {
